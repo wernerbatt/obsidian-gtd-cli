@@ -21,6 +21,21 @@ cd /mnt/c/Users/werne/obsidian-gtd-cli
 python tools/process_item.py --file GTD/Dashboard.md --line 42
 ```
 
+## IMPORTANT: User Confirmation Required
+
+**CRITICAL:** When using this skill with Claude Code or AI assistance:
+- **NEVER** make changes to tasks without explicit user confirmation
+- **ALWAYS** present options and recommendations first
+- **WAIT** for user approval before executing any add_context.py, process_item.py, or other modification commands
+- Use `--dry-run` flag to preview changes before asking for confirmation
+
+AI assistants should:
+1. Find and display inbox items
+2. Analyze and recommend actions based on GTD principles
+3. **Ask user:** "Would you like me to apply these changes?"
+4. **Wait for confirmation** (yes/no)
+5. Only then execute the actual commands
+
 ## Workflow
 
 ### 1. Find Inbox Items
