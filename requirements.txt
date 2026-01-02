@@ -1,0 +1,16 @@
+# Python dependencies for Obsidian GTD CLI
+
+# YAML parsing for config.yaml
+PyYAML>=6.0
+
+# Markdown frontmatter processing
+python-frontmatter>=1.0.0
+
+# Date/time utilities for task scheduling
+python-dateutil>=2.8.0
+
+# File pattern matching (.gitignore-style patterns)
+pathspec>=0.11.0
+
+# Rich terminal output for better CLI experience
+rich>=13.0.0

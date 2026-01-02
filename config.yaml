@@ -1,0 +1,54 @@
+# Obsidian GTD CLI Configuration
+
+# Path to your Obsidian vault (relative or absolute)
+vault_path: ../Obsidian
+
+# GTD folder structure within vault
+gtd:
+  # Base GTD folder
+  base_folder: GTD
+
+  # Dashboard file with query views
+  dashboard: GTD/Dashboard.md
+
+  # Context files (for organizing next actions)
+  contexts:
+    pc: GTD/PC.md
+    work: GTD/Work.md
+    home: GTD/Home.md
+    sharne: GTD/Partner.md
+    errands: GTD/Errands.md
+    garden: GTD/Garden.md
+    someday: GTD/Someday Maybe.md
+
+  # Project folder and index
+  projects_folder: GTD/Projects
+  projects_list: GTD/Projects List.md
+
+  # Checklists folder
+  checklists_folder: GTD/Checklists
+  weekly_review: GTD/Checklists/Weekly Review Checklist.md
+
+  # Recurring tasks file
+  recurring: GTD/Recurring.md
+
+# Default settings
+settings:
+  # Create backups before modifying files
+  create_backups: true
+
+  # Default context tag if none specified
+  default_context: "@pc"
+
+  # Available context tags to suggest during processing
+  available_contexts:
+    - "@pc"
+    - "@work"
+    - "@home"
+    - "@partner"
+    - "@out"
+    - "@garden"
+    - "@ai"
+    - "@someday"
+    - "@ponderables"
+    - "@stuck"
