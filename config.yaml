@@ -38,8 +38,8 @@ gtd:
 
 # Default settings
 settings:
-  # Create backups before modifying files
-  create_backups: true
+  # Create backups before modifying files (disabled - rely on git instead)
+  create_backups: false
 
   # Default context tag if none specified
   default_context: "@pc"

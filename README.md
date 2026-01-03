@@ -191,7 +191,6 @@ python tools/move_task.py --source GTD/PC.md --line 10 --dest "GTD/Projects/Webs
 **Features:**
 - Preserves all metadata (dates, tags, etc.)
 - Moves subtasks along with parent
-- Creates backups before changes
 - Confirms before moving
 
 ### weekly_review.py
@@ -248,10 +247,13 @@ gtd:
   recurring: GTD/Recurring.md
 
 settings:
-  create_backups: true
+  create_backups: false  # Disabled - rely on git instead
   default_context: "@pc"
   available_contexts:
-    - "@pc"
+    - "@pc-deep"      # Deep focus work (2+ hours)
+    - "@pc-quick"     # Quick wins (<15 min)
+    - "@pc-batch"     # Similar tasks to batch
+    - "@pc"           # Legacy - migrate to specific contexts
     - "@work"
     - "@home"
     - "@partner"
@@ -368,20 +370,36 @@ Use your Obsidian Dashboard to see tasks by context and work from your lists wit
 6. **Weekly review is sacred** - Non-negotiable time to maintain your system
 7. **Trust your system** - If it's not in GTD, it doesn't exist
 
-## Backup Strategy
+## Version Control
 
-All modification tools create `.bak` backup files by default:
-- Backups created before any file modification
-- Original formatting preserved
-- Use `--no-backup` flag to skip (not recommended)
+This toolkit relies on git for version control instead of creating backup files:
 
-To restore from backup:
+**Best Practices:**
+- Initialize your Obsidian vault as a git repository
+- Commit regularly (e.g., after each GTD processing session)
+- Use meaningful commit messages describing what was processed/organized
+- Create branches for experimental reorganization
+
+**Recommended workflow:**
 ```bash
-# Linux/Mac
-mv file.md.bak file.md
+# After processing inbox or organizing tasks
+cd /path/to/Obsidian
+git add -A
+git commit -m "Processed inbox: 12 tasks organized by context"
+git push
+```
 
-# Windows
-move file.md.bak file.md
+**To undo changes:**
+```bash
+# Undo uncommitted changes
+git restore path/to/file.md
+
+# Undo last commit (keep changes)
+git reset HEAD~1
+
+# View history and restore specific version
+git log
+git checkout <commit-hash> -- path/to/file.md
 ```
 
 ## Troubleshooting
@@ -438,7 +456,7 @@ obsidian-gtd-cli/
 All tools share common utilities in `gtd_common.py`:
 - `load_config()` - Load vault configuration
 - `parse_task_line()` - Parse Obsidian task syntax
-- `create_backup()` - Backup files before modification
+- `add_metadata_to_task()` - Add context, dates, priority to tasks
 - `task_matches_to_process_criteria()` - GTD inbox filter
 
 See existing tools for examples.
@@ -449,7 +467,7 @@ Contributions welcome! Please:
 1. Follow existing code patterns
 2. Test with actual Obsidian vault
 3. Update README for new features
-4. Create backup-safe tools
+4. Ensure git compatibility (no temp/backup files)
 
 ## License
 
