@@ -145,6 +145,8 @@ Projects List.md automatically.
                        help="Default context tag for next actions (e.g., @pc, @work)")
     parser.add_argument("--template", "-t", metavar="FILE",
                        help="Custom template file to use (relative to vault)")
+    parser.add_argument("--yes", "-y", action="store_true",
+                       help="Auto-confirm without prompting (for agentic use)")
 
     args = parser.parse_args()
 
@@ -168,9 +170,10 @@ Projects List.md automatically.
     # Check if already exists
     if project_file.exists():
         print(f"Error: Project file already exists: {project_file.relative_to(vault_path)}")
-        response = input("Overwrite? (yes/no): ")
-        if response.lower() not in ['yes', 'y']:
-            return
+        if not args.yes:
+            response = input("Overwrite? (yes/no): ")
+            if response.lower() not in ['yes', 'y']:
+                return
 
     # Generate or load template
     if args.template:

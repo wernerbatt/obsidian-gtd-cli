@@ -257,8 +257,8 @@ Priority symbols:
                        help="Priority symbol to add (⏫ highest, 🔼 high, 🔽 low, ⏬ lowest)")
     parser.add_argument("--dry-run", "-n", action="store_true",
                        help="Preview changes without applying them")
-    parser.add_argument("--no-backup", action="store_true",
-                       help="Don't create backup files when updating tasks")
+    parser.add_argument("--yes", "-y", action="store_true",
+                       help="Auto-confirm without prompting (for agentic use)")
 
     args = parser.parse_args()
 
@@ -291,9 +291,10 @@ Priority symbols:
         valid_contexts = config['settings']['available_contexts']
         if args.context not in valid_contexts:
             print(f"Warning: '{args.context}' is not in configured contexts: {', '.join(valid_contexts)}")
-            response = input("Continue anyway? (yes/no): ")
-            if response.lower() not in ['yes', 'y']:
-                return
+            if not args.yes:
+                response = input("Continue anyway? (yes/no): ")
+                if response.lower() not in ['yes', 'y']:
+                    return
 
     # Find tasks
     vault_path = get_vault_path()

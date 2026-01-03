@@ -56,7 +56,7 @@ def parse_date_string(date_str):
 
 
 def edit_task(file_path, line_num, new_description, context=None, scheduled_date=None,
-              due_date=None, priority=None, create_backups=True):
+              due_date=None, priority=None, create_backups=True, auto_confirm=False):
     """
     Edit a task's description and optionally add metadata.
 
@@ -69,6 +69,7 @@ def edit_task(file_path, line_num, new_description, context=None, scheduled_date
         due_date (str, optional): Due date to add
         priority (str, optional): Priority symbol to add
         create_backups (bool): Whether to create backup file
+        auto_confirm (bool): Skip confirmation prompt (for agentic use)
 
     Returns:
         bool: True if successful
@@ -113,10 +114,11 @@ def edit_task(file_path, line_num, new_description, context=None, scheduled_date
     print(f"Final:   {final_description}")
 
     # Confirm
-    response = input("\nProceed with edit? (yes/no): ")
-    if response.lower() not in ['yes', 'y']:
-        print("Cancelled.")
-        return False
+    if not auto_confirm:
+        response = input("\nProceed with edit? (yes/no): ")
+        if response.lower() not in ['yes', 'y']:
+            print("Cancelled.")
+            return False
 
     # Create backup
     if create_backups:
@@ -185,8 +187,8 @@ Priority symbols:
                        help="Due date (today, tomorrow, +N, YYYY-MM-DD)")
     parser.add_argument("--priority", "-p", metavar="SYMBOL",
                        help="Priority symbol (⏫, 🔼, 🔽, ⏬)")
-    parser.add_argument("--no-backup", action="store_true",
-                       help="Don't create backup file")
+    parser.add_argument("--yes", "-y", action="store_true",
+                       help="Auto-confirm without prompting (for agentic use)")
 
     args = parser.parse_args()
 
@@ -232,7 +234,8 @@ Priority symbols:
         scheduled_date=scheduled_date,
         due_date=due_date,
         priority=args.priority,
-        create_backups=not args.no_backup
+        create_backups=False,  # Disabled - rely on git
+        auto_confirm=args.yes
     )
 
 

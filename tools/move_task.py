@@ -21,7 +21,7 @@ from gtd_common import (
 )
 
 
-def move_task(source_file, line_num, dest_file, create_backups=True):
+def move_task(source_file, line_num, dest_file, create_backups=True, auto_confirm=False):
     """
     Move a task from source file to destination file.
 
@@ -83,10 +83,11 @@ def move_task(source_file, line_num, dest_file, create_backups=True):
         print(f"  Subtasks: {len(subtask_lines)}")
 
     # Confirm
-    response = input("\nProceed? (yes/no): ")
-    if response.lower() not in ['yes', 'y']:
-        print("Cancelled.")
-        return False
+    if not auto_confirm:
+        response = input("\nProceed? (yes/no): ")
+        if response.lower() not in ['yes', 'y']:
+            print("Cancelled.")
+            return False
 
     # Create backups
     if create_backups:
@@ -175,8 +176,8 @@ The tool will:
                        help="Line number of task to move (1-indexed)")
     parser.add_argument("--dest", "-d", required=True, metavar="FILE",
                        help="Destination file (relative to vault)")
-    parser.add_argument("--no-backup", action="store_true",
-                       help="Don't create backup files")
+    parser.add_argument("--yes", "-y", action="store_true",
+                       help="Auto-confirm without prompting (for agentic use)")
 
     args = parser.parse_args()
 
@@ -200,7 +201,8 @@ The tool will:
         source_file,
         args.line,
         dest_file,
-        create_backups=not args.no_backup
+        create_backups=False,  # Disabled - rely on git
+        auto_confirm=args.yes
     )
 
 

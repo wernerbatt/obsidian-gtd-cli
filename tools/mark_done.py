@@ -48,7 +48,7 @@ def parse_date_string(date_str):
             raise ValueError(f"Invalid date format: {date_str}. Use YYYY-MM-DD, today, or yesterday")
 
 
-def mark_task_done(file_path, line_num, done_date=None, create_backups=True):
+def mark_task_done(file_path, line_num, done_date=None, create_backups=True, auto_confirm=False):
     """
     Mark a task as done with completion date.
 
@@ -57,6 +57,7 @@ def mark_task_done(file_path, line_num, done_date=None, create_backups=True):
         line_num (int): Line number of task (1-indexed)
         done_date (str, optional): Done date (defaults to today)
         create_backups (bool): Whether to create backup file
+        auto_confirm (bool): Skip confirmation prompt (for agentic use)
 
     Returns:
         bool: True if successful
@@ -98,10 +99,11 @@ def mark_task_done(file_path, line_num, done_date=None, create_backups=True):
     print(f"Done date: {done_date}")
 
     # Confirm
-    response = input("\nMark as done? (yes/no): ")
-    if response.lower() not in ['yes', 'y']:
-        print("Cancelled.")
-        return False
+    if not auto_confirm:
+        response = input("\nMark as done? (yes/no): ")
+        if response.lower() not in ['yes', 'y']:
+            print("Cancelled.")
+            return False
 
     # Create backup
     if create_backups:
@@ -170,8 +172,8 @@ Date formats:
                        help="Line number of task (1-indexed)")
     parser.add_argument("--date", "-d", metavar="DATE",
                        help="Done date (default: today)")
-    parser.add_argument("--no-backup", action="store_true",
-                       help="Don't create backup file")
+    parser.add_argument("--yes", "-y", action="store_true",
+                       help="Auto-confirm without prompting (for agentic use)")
 
     args = parser.parse_args()
 
@@ -197,7 +199,8 @@ Date formats:
         file_path,
         args.line,
         done_date=done_date,
-        create_backups=not args.no_backup
+        create_backups=False,  # Disabled - rely on git
+        auto_confirm=args.yes
     )
 
 
