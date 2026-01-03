@@ -32,9 +32,12 @@ python tools/process_item.py --file GTD/Dashboard.md --line 42
 AI assistants should:
 1. Find and display inbox items
 2. Analyze and recommend actions based on GTD principles
-3. **Ask user:** "Would you like me to apply these changes?"
-4. **Wait for confirmation** (yes/no)
-5. Only then execute the actual commands
+3. **Present the changes** that will be made (no dry-run needed unless requested)
+4. **Ask user:** "Would you like me to apply these changes?"
+5. **Wait for confirmation** (yes/no)
+6. Only then execute the actual commands
+
+Note: Use --dry-run only when explicitly requested by user. Default workflow is to present changes and wait for approval before executing.
 
 ## Workflow
 
