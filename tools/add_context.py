@@ -122,14 +122,15 @@ def parse_scheduled_date(date_str):
             raise ValueError(f"Invalid date format: {date_str}. Use YYYY-MM-DD")
 
 
-def update_tasks(tasks, context=None, scheduled_date=None, dry_run=False, create_backups=True):
+def update_tasks(tasks, context=None, scheduled_date=None, priority=None, dry_run=False, create_backups=True):
     """
-    Update tasks with context tag and/or scheduled date.
+    Update tasks with context tag, scheduled date, and/or priority.
 
     Args:
         tasks (list): List of task dictionaries
         context (str, optional): Context tag to add (e.g., '@pc')
         scheduled_date (str, optional): Scheduled date to add
+        priority (str, optional): Priority symbol (⏫, 🔼, 🔽, ⏬)
         dry_run (bool): If True, show changes without applying
         create_backups (bool): Whether to create backup files
 
@@ -163,7 +164,8 @@ def update_tasks(tasks, context=None, scheduled_date=None, dry_run=False, create
                     new_desc = add_metadata_to_task(
                         task['description'],
                         context=context,
-                        scheduled_date=scheduled_date
+                        scheduled_date=scheduled_date,
+                        priority=priority
                     )
                     print(f"  Line {task['line_num']}:")
                     print(f"    Before: {task['description']}")
@@ -189,7 +191,8 @@ def update_tasks(tasks, context=None, scheduled_date=None, dry_run=False, create
                     new_description = add_metadata_to_task(
                         description.rstrip(),
                         context=context,
-                        scheduled_date=scheduled_date
+                        scheduled_date=scheduled_date,
+                        priority=priority
                     )
 
                     lines[line_idx] = f"{prefix}{new_description}\n"
@@ -222,6 +225,9 @@ Examples:
   # Add context and schedule for next week
   python tools/add_context.py --context "@home" --search "clean" --scheduled +7
 
+  # Add lowest priority to someday/maybe items
+  python tools/add_context.py --search "maybe" --priority "⏬"
+
   # Preview changes without applying (dry run)
   python tools/add_context.py --context "@pc" --search "code" --dry-run
 
@@ -230,6 +236,12 @@ Scheduled date formats:
   - tomorrow    : Tomorrow's date
   - +N          : N days from now (e.g., +3)
   - YYYY-MM-DD  : Specific date
+
+Priority symbols:
+  - ⏫  : Highest priority
+  - 🔼  : High priority
+  - 🔽  : Low priority
+  - ⏬  : Lowest priority (someday/maybe)
         """
     )
 
@@ -241,6 +253,8 @@ Scheduled date formats:
                        help="File to search (relative to vault)")
     parser.add_argument("--scheduled", metavar="DATE",
                        help="Scheduled date to add (today, tomorrow, +N, YYYY-MM-DD)")
+    parser.add_argument("--priority", "-p", metavar="SYMBOL",
+                       help="Priority symbol to add (⏫ highest, 🔼 high, 🔽 low, ⏬ lowest)")
     parser.add_argument("--dry-run", "-n", action="store_true",
                        help="Preview changes without applying them")
     parser.add_argument("--no-backup", action="store_true",
@@ -249,11 +263,18 @@ Scheduled date formats:
     args = parser.parse_args()
 
     # Validate arguments
-    if not args.context and not args.scheduled:
-        parser.error("At least one of --context or --scheduled is required")
+    if not args.context and not args.scheduled and not args.priority:
+        parser.error("At least one of --context, --scheduled, or --priority is required")
 
     if not args.search and not args.file:
         parser.error("At least one of --search or --file is required")
+
+    # Validate priority symbol
+    valid_priorities = ['⏫', '🔼', '🔽', '⏬']
+    if args.priority and args.priority not in valid_priorities:
+        print(f"Error: Invalid priority symbol '{args.priority}'")
+        print(f"Valid priorities: {', '.join(valid_priorities)}")
+        return
 
     # Parse scheduled date if provided
     scheduled_date = None
@@ -292,6 +313,7 @@ Scheduled date formats:
         tasks,
         context=args.context,
         scheduled_date=scheduled_date,
+        priority=args.priority,
         dry_run=args.dry_run,
         create_backups=not args.no_backup
     )
