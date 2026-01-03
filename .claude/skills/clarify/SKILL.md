@@ -89,9 +89,18 @@ python tools/process_item.py --file GTD/Dashboard.md --line 42
 
 ## Context Tags
 
-Tasks are organized by context (where/when/with whom can you do it):
+Tasks are organized by context (where/when/with whom/what focus can you do it):
 
-- `@pc` - Requires computer
+**Computer Tasks (by focus level):**
+- `@pc-deep` - Deep focus work (2+ hours, requires concentration, no interruptions)
+  - Examples: Programming, writing, complex analysis, learning new skills
+- `@pc-quick` - Quick wins (<15 minutes, low effort, can do anytime)
+  - Examples: Reply to email, update task, quick search, file something
+- `@pc-batch` - Similar tasks to batch together (saves mental switching)
+  - Examples: Process emails, update multiple spreadsheets, review documents
+- `@pc` - Legacy context (being phased out - use specific contexts above)
+
+**Other Contexts:**
 - `@work` - Work context
 - `@home` - Home tasks
 - `@sharne` - Requires Sharné
@@ -102,6 +111,24 @@ Tasks are organized by context (where/when/with whom can you do it):
 - `@stuck` - Blocked items
 
 **Note:** `@someday` context is deprecated. For "someday/maybe" items, use lowest priority (⏬) instead.
+
+### How to Choose PC Context:
+
+Ask yourself:
+1. **How long will this take?**
+   - 2+ hours → `@pc-deep`
+   - <15 min → `@pc-quick`
+
+2. **What's my energy level right now?**
+   - Fresh/morning → Check `@pc-deep`
+   - Tired/afternoon → Check `@pc-quick`
+
+3. **Can I batch this with similar tasks?**
+   - Multiple emails/updates → `@pc-batch`
+
+4. **Does this require deep focus?**
+   - Yes, no interruptions → `@pc-deep`
+   - No, can handle interruptions → `@pc-quick`
 
 ## Priority Levels
 

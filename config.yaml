@@ -13,12 +13,16 @@ gtd:
 
   # Context files (for organizing next actions)
   contexts:
-    pc: GTD/PC.md
+    pc_deep: GTD/PC - Deep Focus.md
+    pc_quick: GTD/PC - Quick Wins.md
+    pc_batch: GTD/PC - Batch Tasks.md
     work: GTD/Work.md
     home: GTD/Home.md
     sharne: GTD/Sharné.md
     errands: GTD/Errands.md
     garden: GTD/Garden.md
+    # Legacy - to be migrated to pc_deep/quick/batch
+    pc: GTD/PC.md
     # someday: GTD/Someday Maybe.md  # DEPRECATED: Use lowest priority (⏬) instead
 
   # Project folder and index
@@ -42,7 +46,9 @@ settings:
 
   # Available context tags to suggest during processing
   available_contexts:
-    - "@pc"
+    - "@pc-deep"      # Deep focus work (2+ hours, high concentration)
+    - "@pc-quick"     # Quick wins (<15 min, low effort)
+    - "@pc-batch"     # Similar tasks to batch together
     - "@work"
     - "@home"
     - "@sharne"
@@ -51,5 +57,7 @@ settings:
     - "@ai"
     - "@ponderables"
     - "@stuck"
+    # Legacy - migrate to @pc-deep/quick/batch
+    - "@pc"
 
   # Note: @someday context is deprecated. Use lowest priority (⏬) for someday/maybe items instead.

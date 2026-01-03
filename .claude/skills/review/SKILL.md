@@ -60,7 +60,7 @@ The weekly review report includes:
 #### 2. Get Current
 
 **Context Review:**
-- Count of active tasks by context (@pc, @work, @home, etc.)
+- Count of active tasks by context (@pc-deep, @pc-quick, @pc-batch, @work, @home, etc.)
 - Total active task count
 
 **Overdue Tasks:**
@@ -209,11 +209,13 @@ Track these over time to identify patterns and improve your system.
    [Add next actions to "Website Redesign" and "Garden Planning"]
 
 5. Review context lists:
-   [@pc: 15 tasks - looks good]
+   [@pc-deep: 8 tasks - looks good]
+   [@pc-quick: 5 tasks - can knock out today]
+   [@pc-batch: 3 tasks - schedule batch time]
    [@work: 8 tasks - manageable]
    [@home: 12 tasks - schedule for weekend]
 
-6. Review Someday/Maybe:
+6. Review Someday/Maybe (lowest priority tasks):
    [Found 2 items to activate, added to @ai list]
 
 7. Final check:
