@@ -250,6 +250,7 @@ def add_metadata_to_task(description, **kwargs):
     - due_date (str): YYYY-MM-DD format
     - start_date (str): YYYY-MM-DD format
     - context (str): Context tag (e.g., '@pc')
+    - priority (str): Priority symbol (⏫, 🔼, 🔽, ⏬)
 
     Args:
         description (str): Task description
@@ -259,10 +260,14 @@ def add_metadata_to_task(description, **kwargs):
         str: Updated task description
 
     Example:
-        >>> add_metadata_to_task("Do something", scheduled_date="2025-01-15", context="@pc")
-        "Do something @pc ⏳ 2025-01-15"
+        >>> add_metadata_to_task("Do something", scheduled_date="2025-01-15", context="@pc", priority="⏬")
+        "Do something @pc ⏳ 2025-01-15 ⏬"
     """
     result = description
+
+    # Remove existing priority first (will add at end)
+    if 'priority' in kwargs:
+        result = re.sub(r'[⏫🔼🔽⏬]\s*$', '', result).strip()
 
     # Add context tag if provided
     if 'context' in kwargs and kwargs['context']:
@@ -289,6 +294,10 @@ def add_metadata_to_task(description, **kwargs):
         result = f"{result} 📅 {kwargs['due_date']}"
     if 'start_date' in kwargs and kwargs['start_date']:
         result = f"{result} 🛫 {kwargs['start_date']}"
+
+    # Add priority at the END
+    if 'priority' in kwargs and kwargs['priority']:
+        result = f"{result} {kwargs['priority']}"
 
     return result.strip()
 

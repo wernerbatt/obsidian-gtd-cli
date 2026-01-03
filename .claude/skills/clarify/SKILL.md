@@ -67,7 +67,7 @@ The GTD clarify workflow asks these questions for each task:
 
 1. **What is it?** (Clarify the item)
 2. **Is it actionable?**
-   - **NO**: Trash / Reference / Someday-Maybe
+   - **NO**: Trash / Reference / Lowest Priority (⏬)
    - **YES**: Continue...
 3. **What's the next action?** (Specific, concrete step)
 4. **Can it be done in 2 minutes?**
@@ -95,9 +95,19 @@ Tasks are organized by context (where/when/with whom can you do it):
 - `@out` - Errands/outside
 - `@garden` - Garden work
 - `@ai` - AI-related tasks
-- `@someday` - Someday/maybe items
 - `@ponderables` - Things to think about
 - `@stuck` - Blocked items
+
+**Note:** `@someday` context is deprecated. For "someday/maybe" items, use lowest priority (⏬) instead.
+
+## Priority Levels
+
+Tasks use Obsidian Tasks plugin priority symbols:
+- ⏫ Highest priority
+- 🔼 High priority
+- (no symbol) Normal priority
+- 🔽 Low priority
+- ⏬ Lowest priority (use for someday/maybe items)
 
 ## Date Formats
 
@@ -128,7 +138,7 @@ When scheduling, you can use:
 - The tool creates backups (.bak files) before modifying tasks
 - Cancelled processing leaves tasks unchanged
 - Deleted tasks are removed from files (backups preserved)
-- Someday/Maybe items are moved to GTD/Someday Maybe.md
+- For someday/maybe items, add lowest priority (⏬) instead of using @someday context
 
 ## Integration with Dashboard
 
@@ -188,9 +198,8 @@ Available contexts:
   5. @out
   6. @garden
   7. @ai
-  8. @someday
-  9. @ponderables
-  10. @stuck
+  8. @ponderables
+  9. @stuck
 
 Select context (number or name): 5
 

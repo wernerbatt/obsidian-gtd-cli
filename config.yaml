@@ -19,7 +19,7 @@ gtd:
     sharne: GTD/Sharné.md
     errands: GTD/Errands.md
     garden: GTD/Garden.md
-    someday: GTD/Someday Maybe.md
+    # someday: GTD/Someday Maybe.md  # DEPRECATED: Use lowest priority (⏬) instead
 
   # Project folder and index
   projects_folder: GTD/Projects
@@ -49,6 +49,7 @@ settings:
     - "@out"
     - "@garden"
     - "@ai"
-    - "@someday"
     - "@ponderables"
     - "@stuck"
+
+  # Note: @someday context is deprecated. Use lowest priority (⏬) for someday/maybe items instead.
