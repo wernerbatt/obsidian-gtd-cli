@@ -165,10 +165,10 @@ When scheduling, you can use:
 ## Tips
 
 - Use `find_inbox.py --limit 5` to process just a few items at a time
-- The tool creates backups (.bak files) before modifying tasks
 - Cancelled processing leaves tasks unchanged
-- Deleted tasks are removed from files (backups preserved)
+- Deleted tasks are removed from files
 - For someday/maybe items, add lowest priority (⏬) instead of using @someday context
+- All file modifications are tracked via git - commit regularly to preserve history
 
 ## Integration with Dashboard
 

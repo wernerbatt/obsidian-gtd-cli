@@ -91,7 +91,6 @@ When using `--scheduled`, you can specify:
 - `--file PATH` or `-f PATH` - File to search (relative to vault)
 - `--scheduled DATE` - Scheduled date to add
 - `--dry-run` or `-n` - Preview changes without applying
-- `--no-backup` - Don't create backup files
 
 ## Tool: create_project.py
 
@@ -169,7 +168,6 @@ python tools/move_task.py --source GTD/PC.md --line 10 --dest GTD/Projects/Websi
 
 - Preserves all task metadata (emoji dates, context tags, etc.)
 - Moves subtasks (indented tasks) along with parent task
-- Creates backups before modifying files
 - Confirms before making changes
 
 ### Options
@@ -177,7 +175,6 @@ python tools/move_task.py --source GTD/PC.md --line 10 --dest GTD/Projects/Websi
 - `--source FILE` or `-s FILE` - Source file (relative to vault)
 - `--line N` or `-l N` - Line number of task (1-indexed)
 - `--dest FILE` or `-d FILE` - Destination file (relative to vault)
-- `--no-backup` - Don't create backup files
 
 ## Workflow Examples
 
@@ -234,7 +231,7 @@ python tools/add_context.py --file GTD/Home.md --scheduled +5 --dry-run
 3. **Review context files regularly** - Keep them manageable (10-20 tasks each)
 4. **Move completed tasks** - Archive or delete completed tasks
 5. **Use --dry-run first** - Preview batch changes before applying
-6. **Backups are your friend** - Default backup creation saves mistakes
+6. **Commit to git regularly** - Track all changes with version control
 
 ## Integration with Dashboard
 
@@ -253,8 +250,7 @@ The Dashboard.md queries automatically filter tasks by context tag, so organized
 - Use `add_context.py --dry-run` to preview changes before applying
 - Project names can include spaces and special characters
 - The `move_task.py` tool confirms before moving to prevent accidents
-- All tools create .bak backup files by default
-- You can use `--no-backup` to skip backup creation if needed
+- All file modifications are tracked via git - commit regularly to preserve history
 
 ## Related Tools
 
