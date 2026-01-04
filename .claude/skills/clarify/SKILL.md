@@ -12,7 +12,7 @@ Help process unprocessed items in the Obsidian vault using GTD (Getting Things D
 Find items to process:
 ```bash
 cd /path/to/obsidian-gtd-cli
-python tools/find_inbox.py
+python tools/find_tasks.py --mode inbox
 ```
 
 Process a specific task interactively:
@@ -23,13 +23,13 @@ python tools/process_item.py --file GTD/Dashboard.md --line 42
 
 ## IMPORTANT: User Confirmation Required
 
-**CRITICAL:** When using this skill with Claude Code or AI assistance:
+**CRITICAL:** When using this skill with an AI agent:
 - **NEVER** make changes to tasks without explicit user confirmation
 - **ALWAYS** present options and recommendations first
 - **WAIT** for user approval before executing any add_context.py, process_item.py, or other modification commands
 - Use `--dry-run` flag to preview changes before asking for confirmation
 
-AI assistants should:
+Agents should:
 1. Find and display inbox items
 2. Analyze and recommend actions based on GTD principles
 3. **Present the changes** that will be made (no dry-run needed unless requested)
@@ -52,16 +52,16 @@ The "To Process" query finds tasks that need clarification:
 
 ```bash
 # Find all inbox items
-python tools/find_inbox.py
+python tools/find_tasks.py --mode inbox
 
 # Show details (file paths, line numbers)
-python tools/find_inbox.py --show-details
+python tools/find_tasks.py --mode inbox --show-details
 
 # Limit results
-python tools/find_inbox.py --limit 10
+python tools/find_tasks.py --mode inbox --limit 10
 
 # Export to file for batch processing
-python tools/find_inbox.py --export inbox.txt
+python tools/find_tasks.py --mode inbox --export inbox.txt
 ```
 
 ### 2. Process Items Interactively

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Find tasks in Obsidian vault matching GTD "To Process" criteria.
+Find tasks in Obsidian vault by mode.
 
-This tool replicates the "To Process" query from Dashboard.md to find tasks
-that need to be clarified and organized according to GTD methodology.
+Modes:
+  - inbox: tasks needing GTD processing
+  - someday: legacy @someday or lowest-priority (⏬) tasks
 
 Usage:
-    python tools/find_inbox.py
-    python tools/find_inbox.py --show-details
-    python tools/find_inbox.py --limit 10
-    python tools/find_inbox.py --export inbox.txt
+    python tools/find_tasks.py --mode inbox
+    python tools/find_tasks.py --mode someday --show-details
+    python tools/find_tasks.py --mode inbox --limit 10
+    python tools/find_tasks.py --mode someday --export someday.txt
 """
 
 import argparse
-from pathlib import Path
 from gtd_common import (
     get_vault_path,
     parse_task_line,
@@ -22,20 +22,9 @@ from gtd_common import (
 
 
 def find_inbox_tasks(vault_path, limit=None):
-    """
-    Find all tasks matching "To Process" criteria.
-
-    Args:
-        vault_path (Path): Path to Obsidian vault
-        limit (int, optional): Maximum number of tasks to return
-
-    Returns:
-        list: List of task dictionaries with file, line_num, description
-    """
     tasks = []
 
     for md_file in vault_path.rglob("*.md"):
-        # Skip .obsidian folder
         if ".obsidian" in md_file.parts:
             continue
 
@@ -48,7 +37,6 @@ def find_inbox_tasks(vault_path, limit=None):
                 if not task:
                     continue
 
-                # Apply "To Process" filter
                 if not task_matches_to_process_criteria(task, md_file):
                     continue
 
@@ -61,45 +49,77 @@ def find_inbox_tasks(vault_path, limit=None):
                     'scheduled_date': task['scheduled_date']
                 })
 
-                # Check limit
                 if limit and len(tasks) >= limit:
                     break
 
         except Exception as e:
             print(f"Error reading {md_file}: {e}")
 
-        # Check limit
         if limit and len(tasks) >= limit:
             break
 
-    # Sort by path reverse (as specified in Dashboard.md)
     tasks.sort(key=lambda x: str(x['file_relative']), reverse=True)
-
     return tasks
 
 
-def display_tasks(tasks, show_details=False):
-    """
-    Display tasks grouped by file.
+def find_someday_tasks(vault_path, limit=None):
+    tasks = []
 
-    Args:
-        tasks (list): List of task dictionaries
-        show_details (bool): Whether to show file path and line numbers
-    """
-    print(f"Found {len(tasks)} task(s) to process:\n")
+    for md_file in vault_path.rglob("*.md"):
+        if ".obsidian" in md_file.parts:
+            continue
+
+        try:
+            with open(md_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+
+            for line_num, line in enumerate(lines, 1):
+                task = parse_task_line(line, line_num)
+                if not task:
+                    continue
+
+                if task['is_done']:
+                    continue
+
+                desc = task['description']
+                if "@someday" not in desc and task.get('priority') != '⏬':
+                    continue
+
+                tasks.append({
+                    'file': md_file,
+                    'file_relative': md_file.relative_to(vault_path),
+                    'line_num': line_num,
+                    'description': task['description'],
+                    'due_date': task['due_date'],
+                    'scheduled_date': task['scheduled_date']
+                })
+
+                if limit and len(tasks) >= limit:
+                    break
+
+        except Exception as e:
+            print(f"Error reading {md_file}: {e}")
+
+        if limit and len(tasks) >= limit:
+            break
+
+    tasks.sort(key=lambda x: str(x['file_relative']), reverse=True)
+    return tasks
+
+
+def display_tasks(tasks, label, show_details=False):
+    print(f"Found {len(tasks)} {label} task(s):\n")
 
     if not tasks:
-        print("Inbox is empty! All tasks have been processed.")
+        print(f"No {label} tasks found.")
         return
 
     current_file = None
     for task in tasks:
-        # Group by file
         if task['file_relative'] != current_file:
             current_file = task['file_relative']
             print(f"\n{task['file_relative']}:")
 
-        # Show task
         if show_details:
             task_str = f"  Line {task['line_num']}: {task['description']}"
             if task['due_date']:
@@ -112,25 +132,16 @@ def display_tasks(tasks, show_details=False):
         print(task_str)
 
 
-def export_tasks(tasks, export_path):
-    """
-    Export tasks to a text file.
-
-    Args:
-        tasks (list): List of task dictionaries
-        export_path (str): Path to export file
-    """
+def export_tasks(tasks, export_path, label):
     with open(export_path, 'w', encoding='utf-8') as f:
-        f.write(f"# Inbox - Tasks to Process ({len(tasks)} items)\n\n")
+        f.write(f"# {label} Tasks ({len(tasks)} items)\n\n")
 
         current_file = None
         for task in tasks:
-            # Group by file
             if task['file_relative'] != current_file:
                 current_file = task['file_relative']
                 f.write(f"\n## {task['file_relative']}\n\n")
 
-            # Write task
             f.write(f"- [ ] {task['description']}\n")
             f.write(f"  - File: {task['file_relative']}\n")
             f.write(f"  - Line: {task['line_num']}\n")
@@ -145,36 +156,40 @@ def export_tasks(tasks, export_path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Find tasks in Obsidian vault that need GTD processing",
+        description="Find tasks in Obsidian vault by mode",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python tools/find_inbox.py                  # Find all unprocessed tasks
-  python tools/find_inbox.py --show-details   # Show file paths and line numbers
-  python tools/find_inbox.py --limit 10       # Limit to first 10 tasks
-  python tools/find_inbox.py --export inbox.txt  # Export to file
+  python tools/find_tasks.py --mode inbox             # Find tasks to process
+  python tools/find_tasks.py --mode someday           # Find someday tasks
+  python tools/find_tasks.py --mode inbox --limit 10  # Limit to first 10
+  python tools/find_tasks.py --mode someday --export someday.txt
         """
     )
 
+    parser.add_argument("--mode", "-m", choices=["inbox", "someday"], required=True,
+                        help="Task mode: inbox or someday")
     parser.add_argument("--show-details", "-d", action="store_true",
-                       help="Show file path, line number, and dates")
+                        help="Show file path, line number, and dates")
     parser.add_argument("--limit", "-l", type=int, metavar="N",
-                       help="Limit number of tasks to display")
+                        help="Limit number of tasks to display")
     parser.add_argument("--export", "-e", metavar="FILE",
-                       help="Export tasks to file")
+                        help="Export tasks to file")
 
     args = parser.parse_args()
 
-    # Get vault path and find tasks
     vault_path = get_vault_path()
-    tasks = find_inbox_tasks(vault_path, limit=args.limit)
-
-    # Export if requested
-    if args.export:
-        export_tasks(tasks, args.export)
+    if args.mode == "inbox":
+        tasks = find_inbox_tasks(vault_path, limit=args.limit)
+        label = "inbox"
     else:
-        # Otherwise display to terminal
-        display_tasks(tasks, show_details=args.show_details)
+        tasks = find_someday_tasks(vault_path, limit=args.limit)
+        label = "someday"
+
+    if args.export:
+        export_tasks(tasks, args.export, label.title())
+    else:
+        display_tasks(tasks, label, show_details=args.show_details)
 
 
 if __name__ == "__main__":
