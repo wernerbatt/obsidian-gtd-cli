@@ -254,6 +254,6 @@ The Dashboard.md queries automatically filter tasks by context tag, so organized
 
 ## Related Tools
 
-- `find_inbox.py` - Find tasks needing context tags
+- `find_tasks.py --mode inbox` - Find tasks needing context tags
 - `process_item.py` - Interactive processing with context assignment
 - `weekly_review.py` - Review all contexts and projects

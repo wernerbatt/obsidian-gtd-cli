@@ -111,6 +111,7 @@ def parse_task_line(line, line_num):
     scheduled_date = None
     start_date = None
     done_date = None
+    priority = None
 
     # Due date: 📅 YYYY-MM-DD or 📆 YYYY-MM-DD
     due_match = re.search(r'[📅📆]\s*(\d{4}-\d{2}-\d{2})', description)
@@ -144,6 +145,11 @@ def parse_task_line(line, line_num):
         except ValueError:
             pass
 
+    # Priority: ⏫, 🔼, 🔽, ⏬
+    priority_matches = re.findall(r'[⏫🔼🔽⏬]', description)
+    if priority_matches:
+        priority = priority_matches[-1]
+
     # Check for blocking/recurring
     is_blocked = '⛔' in description
     is_recurring = '🔁' in description
@@ -156,6 +162,7 @@ def parse_task_line(line, line_num):
         'scheduled_date': scheduled_date,
         'start_date': start_date,
         'done_date': done_date,
+        'priority': priority,
         'is_blocked': is_blocked,
         'is_recurring': is_recurring,
         'indent': len(indent)
@@ -168,6 +175,7 @@ def task_matches_to_process_criteria(task, file_path):
 
     Criteria (from Dashboard.md):
     - No context tags (@pc, @work, @home, @partner, @out, @garden, @someday, @ai, @ponderables, @stuck)
+    - Not lowest priority (⏬)
     - Not a time block (HH:MM - HH:MM)
     - Not empty description
     - Path excludes: Checklist, Templates, Recurring, obsidian-tasks
@@ -192,6 +200,14 @@ def task_matches_to_process_criteria(task, file_path):
     for tag in context_tags:
         if tag in desc:
             return False
+
+    # Always exclude deprecated @someday items from inbox
+    if "@someday" in desc:
+        return False
+
+    # Exclusion: lowest priority items (someday/maybe)
+    if task.get('priority') == '⏬':
+        return False
 
     # Exclusion: time range pattern (HH:MM - HH:MM)
     if re.match(r'^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}', desc):

@@ -148,7 +148,7 @@ The weekly review works best combined with other tools:
 python tools/weekly_review.py
 
 # 2. Process inbox to zero
-python tools/find_inbox.py
+python tools/find_tasks.py --mode inbox
 python tools/process_item.py --file GTD/Dashboard.md --line 42
 
 # 3. Review overdue tasks
