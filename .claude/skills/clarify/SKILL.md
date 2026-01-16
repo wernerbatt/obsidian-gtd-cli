@@ -39,6 +39,10 @@ Agents should:
 
 Note: Use --dry-run only when explicitly requested by user. Default workflow is to present changes and wait for approval before executing.
 
+### Batch Suggestion Mode
+
+When the user asks for batch suggestions, format options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) and wait for selections before applying.
+
 ## Workflow
 
 ### 1. Find Inbox Items
@@ -49,6 +53,7 @@ The "To Process" query finds tasks that need clarification:
 - Not time blocks
 - Not in excluded folders (Checklists, Templates, Recurring)
 - Not blocked or done
+- Excludes `@someday` and lowest-priority (⏬) items
 
 ```bash
 # Find all inbox items
@@ -63,6 +68,31 @@ python tools/find_tasks.py --mode inbox --limit 10
 # Export to file for batch processing
 python tools/find_tasks.py --mode inbox --export inbox.txt
 ```
+
+To review someday/maybe items (legacy `@someday` or ⏬), use:
+```bash
+python tools/find_tasks.py --mode someday
+```
+
+### 1.0 Batch Size Guidance
+
+If there are more than 10 inbox items, present only the first 10 and process them.
+After those are handled, ask whether to show the next 10.
+Repeat until the user stops or the inbox is cleared.
+
+### 1.1 Link-Heavy Items
+
+For raw URLs, default to actions like “Read/Watch [source]” with `@pc-batch` unless the user prefers archiving or a different context.
+Always preserve the original link in the rewritten task line.
+Place links before context tags (e.g., `Task https://... @pc-batch`).
+
+### 1.2 Scheduling Shorthand
+
+If the user says a weekday (e.g., “Tuesday” or “Thursday”), schedule the task for the first upcoming occurrence of that day.
+
+### 1.3 Reference Creation
+
+If an item is clearly a book, game, product, or other reference, suggest creating a reference note (using the appropriate reference skill/tooling) and then mark the task done once the reference is created.
 
 ### 2. Process Items Interactively
 
