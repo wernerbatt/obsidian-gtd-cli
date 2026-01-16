@@ -16,9 +16,10 @@ Before creating a project, confirm the desired outcome statement and any hard du
    - Describe the **Purpose / Outcome** in a single success sentence.
    - Fill in constraints, deliverables, and due dates near the top if applicable.
 3. Brain-dump all known next actions in the **Next Actions** section and tag each with a context (`@pc-quick`, `@home`, etc.). Leave only the true “next” ones unchecked.
-4. Move or copy any existing tasks referencing this work into the project note (or into context files while linking back with `[[Project Name]]`). Use `python tools/move_task.py ...` to preserve metadata.
-5. Capture supporting material in **Notes** or **Resources / Links** (meeting notes, links, files).
-6. If the project depends on someone else, record @waiting items inside the Notes section and optionally in Dashboard contexts for visibility.
+4. Default to ordered steps unless explicitly told they can be parallel. Add Task Dependencies: assign each task a `🆔` and add `⛔ <id>` to the dependent task so the sequence is enforced. For multiple prerequisites, list IDs with commas and no spaces.
+5. Move or copy any existing tasks referencing this work into the project note (or into context files while linking back with `[[Project Name]]`). Use `python tools/move_task.py ...` to preserve metadata.
+6. Capture supporting material in **Notes** or **Resources / Links** (meeting notes, links, files).
+7. If the project depends on someone else, record @waiting items inside the Notes section and optionally in Dashboard contexts for visibility.
 
 ## Maintenance Checklist
 - During Weekly Review, scan each active project and ensure there is at least one clearly defined next action in the project note and in a context list.
