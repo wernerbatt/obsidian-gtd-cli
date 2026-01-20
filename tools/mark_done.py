@@ -17,7 +17,8 @@ from datetime import datetime, date, timedelta
 from gtd_common import (
     get_vault_path,
     parse_task_line,
-    create_backup
+    create_backup,
+    find_task_lines_by_match
 )
 import re
 
@@ -48,7 +49,8 @@ def parse_date_string(date_str):
             raise ValueError(f"Invalid date format: {date_str}. Use YYYY-MM-DD, today, or yesterday")
 
 
-def mark_task_done(file_path, line_num, done_date=None, create_backups=True, auto_confirm=False):
+def mark_task_done(file_path, line_num, done_date=None, create_backups=True, auto_confirm=False,
+                   match_text=None, match_regex=False, occurrence=1):
     """
     Mark a task as done with completion date.
 
@@ -76,8 +78,23 @@ def mark_task_done(file_path, line_num, done_date=None, create_backups=True, aut
         print(f"Error reading file: {e}")
         return False
 
+    # Resolve line number by match if needed
+    if line_num is None and match_text:
+        matches = find_task_lines_by_match(lines, match_text, use_regex=match_regex)
+        if not matches:
+            print("Error: No matching tasks found")
+            return False
+        if occurrence < 1:
+            print("Error: Occurrence must be >= 1")
+            return False
+        if occurrence > len(matches):
+            print(f"Error: Only found {len(matches)} match(es); occurrence {occurrence} is out of range")
+            return False
+        line_num = matches[occurrence - 1]
+        print(f"Matched {len(matches)} task(s); using occurrence {occurrence} at line {line_num}")
+
     # Validate line number
-    if line_num < 1 or line_num > len(lines):
+    if line_num is None or line_num < 1 or line_num > len(lines):
         print(f"Error: Invalid line number {line_num} (file has {len(lines)} lines)")
         return False
 
@@ -151,6 +168,9 @@ Examples:
   # Mark task as done with specific date
   python tools/mark_done.py --file Daily/2025-12-29.md --line 27 --date 2026-01-03
 
+  # Mark task as done by matching description
+  python tools/mark_done.py --file Daily/2025-12-29.md --match "message" --date 2026-01-03
+
   # Mark task as done yesterday
   python tools/mark_done.py --file Daily/2025-12-28.md --line 28 --date yesterday
 
@@ -168,8 +188,15 @@ Date formats:
 
     parser.add_argument("--file", "-f", required=True, metavar="PATH",
                        help="File containing task (relative to vault)")
-    parser.add_argument("--line", "-l", required=True, type=int, metavar="N",
-                       help="Line number of task (1-indexed)")
+    line_group = parser.add_mutually_exclusive_group(required=True)
+    line_group.add_argument("--line", "-l", type=int, metavar="N",
+                           help="Line number of task (1-indexed)")
+    line_group.add_argument("--match", metavar="TEXT",
+                           help="Match exact task description (use --match-regex for patterns)")
+    parser.add_argument("--match-regex", action="store_true",
+                       help="Treat --match as regex")
+    parser.add_argument("--occurrence", type=int, default=1, metavar="N",
+                       help="Match occurrence to use when multiple tasks match (default: 1)")
     parser.add_argument("--date", "-d", metavar="DATE",
                        help="Done date (default: today)")
     parser.add_argument("--yes", "-y", action="store_true",
@@ -197,10 +224,13 @@ Date formats:
     # Mark task as done
     mark_task_done(
         file_path,
-        args.line,
+        args.line if args.match is None else None,
         done_date=done_date,
         create_backups=False,  # Disabled - rely on git
-        auto_confirm=args.yes
+        auto_confirm=args.yes,
+        match_text=args.match,
+        match_regex=args.match_regex,
+        occurrence=args.occurrence
     )
 
 

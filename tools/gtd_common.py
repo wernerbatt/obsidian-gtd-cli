@@ -383,3 +383,31 @@ def extract_context_tags(description):
             found_tags.append(tag)
 
     return found_tags
+
+
+def find_task_lines_by_match(lines, match_text, use_regex=False):
+    """
+    Find task line numbers matching a description string or regex.
+
+    Args:
+        lines (list[str]): File lines
+        match_text (str): Exact description to match (or regex pattern)
+        use_regex (bool): Treat match_text as regex when True
+
+    Returns:
+        list[int]: Matching 1-indexed line numbers
+    """
+    matches = []
+    for line_num, line in enumerate(lines, 1):
+        task = parse_task_line(line, line_num)
+        if not task:
+            continue
+
+        if use_regex:
+            if re.search(match_text, task['description']):
+                matches.append(line_num)
+        else:
+            if task['description'] == match_text:
+                matches.append(line_num)
+
+    return matches

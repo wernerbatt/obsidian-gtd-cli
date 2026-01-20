@@ -18,7 +18,8 @@ from gtd_common import (
     load_config,
     parse_task_line,
     create_backup,
-    add_metadata_to_task
+    add_metadata_to_task,
+    find_task_lines_by_match
 )
 import re
 
@@ -56,7 +57,8 @@ def parse_date_string(date_str):
 
 
 def edit_task(file_path, line_num, new_description, context=None, scheduled_date=None,
-              due_date=None, priority=None, create_backups=True, auto_confirm=False):
+              due_date=None, priority=None, create_backups=True, auto_confirm=False,
+              match_text=None, match_regex=False, occurrence=1):
     """
     Edit a task's description and optionally add metadata.
 
@@ -84,8 +86,23 @@ def edit_task(file_path, line_num, new_description, context=None, scheduled_date
         print(f"Error reading file: {e}")
         return False
 
+    # Resolve line number by match if needed
+    if line_num is None and match_text:
+        matches = find_task_lines_by_match(lines, match_text, use_regex=match_regex)
+        if not matches:
+            print("Error: No matching tasks found")
+            return False
+        if occurrence < 1:
+            print("Error: Occurrence must be >= 1")
+            return False
+        if occurrence > len(matches):
+            print(f"Error: Only found {len(matches)} match(es); occurrence {occurrence} is out of range")
+            return False
+        line_num = matches[occurrence - 1]
+        print(f"Matched {len(matches)} task(s); using occurrence {occurrence} at line {line_num}")
+
     # Validate line number
-    if line_num < 1 or line_num > len(lines):
+    if line_num is None or line_num < 1 or line_num > len(lines):
         print(f"Error: Invalid line number {line_num} (file has {len(lines)} lines)")
         return False
 
@@ -162,6 +179,9 @@ Examples:
   # Change description and add due date
   python tools/edit_task.py --file Daily/2025-12-29.md --line 29 --description "Buy instax camera" --due tomorrow --context "@out"
 
+  # Change description by matching task text
+  python tools/edit_task.py --file Daily/2025-12-29.md --match "Buy instax camera @out" --description "Buy instax camera" --context "@out"
+
   # Add priority
   python tools/edit_task.py --file Daily/2025-12-25.md --line 34 --description "Best albums" --priority "⏬"
 
@@ -175,8 +195,15 @@ Priority symbols:
 
     parser.add_argument("--file", "-f", required=True, metavar="PATH",
                        help="File containing task (relative to vault)")
-    parser.add_argument("--line", "-l", required=True, type=int, metavar="N",
-                       help="Line number of task (1-indexed)")
+    line_group = parser.add_mutually_exclusive_group(required=True)
+    line_group.add_argument("--line", "-l", type=int, metavar="N",
+                           help="Line number of task (1-indexed)")
+    line_group.add_argument("--match", metavar="TEXT",
+                           help="Match exact task description (use --match-regex for patterns)")
+    parser.add_argument("--match-regex", action="store_true",
+                       help="Treat --match as regex")
+    parser.add_argument("--occurrence", type=int, default=1, metavar="N",
+                       help="Match occurrence to use when multiple tasks match (default: 1)")
     parser.add_argument("--description", "-d", required=True, metavar="TEXT",
                        help="New task description")
     parser.add_argument("--context", "-c", metavar="TAG",
@@ -228,14 +255,17 @@ Priority symbols:
     # Edit the task
     edit_task(
         file_path,
-        args.line,
+        args.line if args.match is None else None,
         args.description,
         context=args.context,
         scheduled_date=scheduled_date,
         due_date=due_date,
         priority=args.priority,
         create_backups=False,  # Disabled - rely on git
-        auto_confirm=args.yes
+        auto_confirm=args.yes,
+        match_text=args.match,
+        match_regex=args.match_regex,
+        occurrence=args.occurrence
     )
 
 

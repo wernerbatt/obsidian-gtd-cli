@@ -21,6 +21,20 @@ cd /path/to/obsidian-gtd-cli
 python tools/process_item.py --file GTD/Dashboard.md --line 42
 ```
 
+### Stable Targeting (Avoid Line-Shift Errors)
+
+When batch editing or moving tasks, prefer description matching over line numbers:
+```bash
+# Edit by exact description match
+python tools/edit_task.py --file Daily/2026-01-17.md --match "Buy compost bins" --context "@out" --yes
+
+# Move by exact description match (use --occurrence N if multiple match)
+python tools/move_task.py --source Daily/2026-01-17.md --match "Buy compost bins" --dest "GTD/Projects/Allotment.md" --yes
+
+# Mark done by exact description match
+python tools/mark_done.py --file Daily/2026-01-17.md --match "message" --date 2026-01-18 --yes
+```
+
 ## IMPORTANT: User Confirmation Required
 
 **CRITICAL:** When using this skill with an AI agent:

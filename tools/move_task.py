@@ -17,7 +17,8 @@ from gtd_common import (
     get_vault_path,
     load_config,
     parse_task_line,
-    create_backup
+    create_backup,
+    find_task_lines_by_match
 )
 
 
@@ -162,6 +163,9 @@ Examples:
   # Move task to project file
   python tools/move_task.py --source GTD/PC.md --line 10 --dest GTD/Projects/Website.md
 
+  # Move task by matching description
+  python tools/move_task.py --source Daily/2025-12-29.md --match "Buy instax camera @out" --dest GTD/Projects/Gifts.md
+
 The tool will:
 - Preserve all task metadata (emoji dates, context tags, etc.)
 - Move subtasks (indented tasks) along with the parent
@@ -172,8 +176,15 @@ The tool will:
 
     parser.add_argument("--source", "-s", required=True, metavar="FILE",
                        help="Source file (relative to vault)")
-    parser.add_argument("--line", "-l", required=True, type=int, metavar="N",
-                       help="Line number of task to move (1-indexed)")
+    line_group = parser.add_mutually_exclusive_group(required=True)
+    line_group.add_argument("--line", "-l", type=int, metavar="N",
+                           help="Line number of task to move (1-indexed)")
+    line_group.add_argument("--match", metavar="TEXT",
+                           help="Match exact task description (use --match-regex for patterns)")
+    parser.add_argument("--match-regex", action="store_true",
+                       help="Treat --match as regex")
+    parser.add_argument("--occurrence", type=int, default=1, metavar="N",
+                       help="Match occurrence to use when multiple tasks match (default: 1)")
     parser.add_argument("--dest", "-d", required=True, metavar="FILE",
                        help="Destination file (relative to vault)")
     parser.add_argument("--yes", "-y", action="store_true",
@@ -196,10 +207,33 @@ The tool will:
         print("Error: Source and destination files are the same")
         return
 
+    # Resolve line number via match if provided
+    line_num = args.line
+    if args.match is not None:
+        try:
+            with open(source_file, 'r', encoding='utf-8') as f:
+                source_lines = f.readlines()
+        except Exception as e:
+            print(f"Error reading source file: {e}")
+            return
+
+        matches = find_task_lines_by_match(source_lines, args.match, use_regex=args.match_regex)
+        if not matches:
+            print("Error: No matching tasks found")
+            return
+        if args.occurrence < 1:
+            print("Error: Occurrence must be >= 1")
+            return
+        if args.occurrence > len(matches):
+            print(f"Error: Only found {len(matches)} match(es); occurrence {args.occurrence} is out of range")
+            return
+        line_num = matches[args.occurrence - 1]
+        print(f"Matched {len(matches)} task(s); using occurrence {args.occurrence} at line {line_num}")
+
     # Move task
     move_task(
         source_file,
-        args.line,
+        line_num,
         dest_file,
         create_backups=False,  # Disabled - rely on git
         auto_confirm=args.yes
