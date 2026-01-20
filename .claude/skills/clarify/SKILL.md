@@ -52,7 +52,7 @@ Agents should:
 
 ### Batch Suggestion Mode (Default)
 
-Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) for inbox processing by default. After selections, proceed unless a step is ambiguous, destructive, or conflicting—then ask to confirm those specific items.
+Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) for inbox processing by default. If an item clearly needs multiple steps, include a sub-option to promote it to a project (e.g., `1.3 Create project: "<Name>" and seed next actions`). After selections, proceed unless a step is ambiguous, destructive, or conflicting—then ask to confirm those specific items.
 
 ## Workflow
 
