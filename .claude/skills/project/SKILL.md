@@ -34,6 +34,7 @@ python tools/weekly_review.py --stale-projects
 ### 3. Populate the Note
 - Fill in **Purpose / Outcome** with a single success statement.
 - Brainstorm all known steps, but only leave the true “next actions” unchecked in **Next Actions**. Tag each line with a GTD context (see Organize skill for canonical tags) and schedule if relevant.
+- When promoting an inbox task into a project, generate 2–3 plausible next actions seeded from that task and add them to **Next Actions** with contexts.
 - Assume steps must happen in order unless the user says they can be parallel. Add Task Dependencies so actions follow each other: assign each task a unique `🆔` and add `⛔ <id>` to each dependent task. Chain them so only the first is unblocked; multiple dependencies are comma-separated with no spaces (`,`) in the `⛔` list.
 - Capture references, waiting-fors, and notes in their dedicated sections. Use wikilinks (`[[Project Name]]`) from related tasks or notes to keep traceability.
 - For manual setup or extra guidance, follow the Setup Checklist in `project/references/project-lifecycle.md`.
