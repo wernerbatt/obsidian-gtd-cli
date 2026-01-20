@@ -35,27 +35,24 @@ python tools/move_task.py --source Daily/2026-01-17.md --match "Buy compost bins
 python tools/mark_done.py --file Daily/2026-01-17.md --match "message" --date 2026-01-18 --yes
 ```
 
-## IMPORTANT: User Confirmation Required
+## IMPORTANT: Confirmation & Execution
 
-**CRITICAL:** When using this skill with an AI agent:
-- **NEVER** make changes to tasks without explicit user confirmation
-- **ALWAYS** present options and recommendations first
-- **WAIT** for user approval before executing any add_context.py, process_item.py, or other modification commands
-- Use `--dry-run` flag to preview changes before asking for confirmation
+**CRITICAL (aligned with safety):**
+- Default to batch suggestions: present numbered options/sub-options before edits.
+- Treat explicit user selections as confirmation for those chosen actions.
+- If an action is unclear, destructive (delete/move), or conflicts with stated preferences, pause and ask for explicit yes/no before running tools.
+- Use `--dry-run` only when requested.
 
 Agents should:
-1. Find and display inbox items
-2. Analyze and recommend actions based on GTD principles
-3. **Present the changes** that will be made (no dry-run needed unless requested)
-4. **Ask user:** "Would you like me to apply these changes?"
-5. **Wait for confirmation** (yes/no)
-6. Only then execute the actual commands
+1. Find and display inbox items.
+2. Present batch suggestions (numbered/sub-options) and capture the user's selections.
+3. If any selection is ambiguous/destructive/conflicting, ask for explicit confirmation on those items; otherwise proceed.
+4. Execute the selected actions with stable matching (description-based).
+5. Summarize what changed.
 
-Note: Use --dry-run only when explicitly requested by user. Default workflow is to present changes and wait for approval before executing.
+### Batch Suggestion Mode (Default)
 
-### Batch Suggestion Mode
-
-When the user asks for batch suggestions, format options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) and wait for selections before applying.
+Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) for inbox processing by default. After selections, proceed unless a step is ambiguous, destructive, or conflicting—then ask to confirm those specific items.
 
 ## Workflow
 
