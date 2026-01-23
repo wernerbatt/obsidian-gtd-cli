@@ -12,7 +12,7 @@ Help organize tasks into contexts and projects for effective action.
 Add context tags to tasks:
 ```bash
 cd /path/to/obsidian-gtd-cli
-python tools/add_context.py --context "@pc-deep" --search "research"
+python tools/add_context.py --context "@deep" --search "research"
 ```
 
 Create a new project:
@@ -34,11 +34,11 @@ Tasks are organized by context - the location, tool, or person needed to complet
 ### Available Contexts
 
 **Computer Tasks (by focus level):**
-- **@pc-deep** - Deep focus work (2+ hours, requires concentration, no interruptions)
+- **@deep** - Deep focus work (2+ hours, requires concentration, no interruptions)
   - Examples: Programming, writing, complex analysis, learning new skills
-- **@pc-quick** - Quick wins (<15 minutes, low effort, can do anytime)
+- **@quick** - Quick wins (<15 minutes, low effort, can do anytime)
   - Examples: Reply to email, update task, quick search, file something
-- **@pc-batch** - Similar tasks to batch together (saves mental switching)
+- **@batch** - Similar tasks to batch together (saves mental switching)
   - Examples: Process emails, update multiple spreadsheets, review documents
 - **@pc** - Legacy context (being phased out - use specific contexts above)
 
@@ -63,8 +63,8 @@ Batch add context tags and scheduled dates to tasks based on search criteria.
 ### Basic Usage
 
 ```bash
-# Add @pc-deep to all tasks containing "research"
-python tools/add_context.py --context "@pc-deep" --search "research"
+# Add @deep to all tasks containing "research"
+python tools/add_context.py --context "@deep" --search "research"
 
 # Add @work to all tasks in specific file
 python tools/add_context.py --context "@work" --file GTD/Dashboard.md
@@ -86,7 +86,7 @@ When using `--scheduled`, you can specify:
 
 ### Options
 
-- `--context TAG` or `-c TAG` - Context tag to add (e.g., @pc-deep, @work)
+- `--context TAG` or `-c TAG` - Context tag to add (e.g., @deep, @work)
 - `--search TERM` or `-s TERM` - Search term to match in descriptions
 - `--file PATH` or `-f PATH` - File to search (relative to vault)
 - `--scheduled DATE` - Scheduled date to add
@@ -105,7 +105,7 @@ A project in GTD is any outcome that requires more than one action step.
 python tools/create_project.py "Website Redesign"
 
 # Create with default context for next actions
-python tools/create_project.py "Home Renovation" --context "@pc-deep"
+python tools/create_project.py "Home Renovation" --context "@deep"
 
 # Use custom template
 python tools/create_project.py "Research AI Tools" --template my_template.md
@@ -183,11 +183,11 @@ python tools/move_task.py --source GTD/PC.md --line 10 --dest GTD/Projects/Websi
 You have several research tasks scattered across files and want to organize them:
 
 ```bash
-# Find all research tasks and add @pc-deep context
-python tools/add_context.py --context "@pc-deep" --search "research"
+# Find all research tasks and add @deep context
+python tools/add_context.py --context "@deep" --search "research"
 
 # Schedule them for next week
-python tools/add_context.py --search "research @pc-deep" --scheduled +7
+python tools/add_context.py --search "research @deep" --scheduled +7
 ```
 
 ### Example 2: Create Project for Multi-Step Outcome
@@ -196,7 +196,7 @@ You realize "Website Redesign" is a project, not a simple task:
 
 ```bash
 # Create project file
-python tools/create_project.py "Website Redesign" --context "@pc-deep"
+python tools/create_project.py "Website Redesign" --context "@deep"
 
 # Move related tasks to project file
 python tools/move_task.py --source GTD/PC.md --line 15 --dest "GTD/Projects/Website Redesign.md"
@@ -236,9 +236,9 @@ python tools/add_context.py --file GTD/Home.md --scheduled +5 --dry-run
 ## Integration with Dashboard
 
 After organizing tasks:
-- Tasks with @pc-deep appear in the PC - Deep Focus section of Dashboard.md
-- Tasks with @pc-quick appear in the PC - Quick Wins section
-- Tasks with @pc-batch appear in the PC - Batch Tasks section
+- Tasks with @deep appear in the PC - Deep Focus section of Dashboard.md
+- Tasks with @quick appear in the PC - Quick Wins section
+- Tasks with @batch appear in the PC - Batch Tasks section
 - Tasks with @work appear in the Work section
 - Tasks with @home appear in the Home section
 - etc.

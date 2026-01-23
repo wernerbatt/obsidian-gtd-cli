@@ -93,9 +93,9 @@ Repeat until the user stops or the inbox is cleared.
 
 ### 1.1 Link-Heavy Items
 
-For raw URLs, default to actions like “Read/Watch [source]” with `@pc-batch` unless the user prefers archiving or a different context.
+For raw URLs, default to actions like “Read/Watch [source]” with `@batch` unless the user prefers archiving or a different context.
 Always preserve the original link in the rewritten task line.
-Place links before context tags (e.g., `Task https://... @pc-batch`).
+Place links before context tags (e.g., `Task https://... @batch`).
 
 ### 1.2 Scheduling Shorthand
 
@@ -133,11 +133,11 @@ python tools/process_item.py --file GTD/Dashboard.md --line 42
 Tasks are organized by context (where/when/with whom/what focus can you do it):
 
 **Computer Tasks (by focus level):**
-- `@pc-deep` - Deep focus work (2+ hours, requires concentration, no interruptions)
+- `@deep` - Deep focus work (2+ hours, requires concentration, no interruptions)
   - Examples: Programming, writing, complex analysis, learning new skills
-- `@pc-quick` - Quick wins (<15 minutes, low effort, can do anytime)
+- `@quick` - Quick wins (<15 minutes, low effort, can do anytime)
   - Examples: Reply to email, update task, quick search, file something
-- `@pc-batch` - Similar tasks to batch together (saves mental switching)
+- `@batch` - Similar tasks to batch together (saves mental switching)
   - Examples: Process emails, update multiple spreadsheets, review documents
 - `@pc` - Legacy context (being phased out - use specific contexts above)
 
@@ -157,19 +157,19 @@ Tasks are organized by context (where/when/with whom/what focus can you do it):
 
 Ask yourself:
 1. **How long will this take?**
-   - 2+ hours → `@pc-deep`
-   - <15 min → `@pc-quick`
+   - 2+ hours → `@deep`
+   - <15 min → `@quick`
 
 2. **What's my energy level right now?**
-   - Fresh/morning → Check `@pc-deep`
-   - Tired/afternoon → Check `@pc-quick`
+   - Fresh/morning → Check `@deep`
+   - Tired/afternoon → Check `@quick`
 
 3. **Can I batch this with similar tasks?**
-   - Multiple emails/updates → `@pc-batch`
+   - Multiple emails/updates → `@batch`
 
 4. **Does this require deep focus?**
-   - Yes, no interruptions → `@pc-deep`
-   - No, can handle interruptions → `@pc-quick`
+   - Yes, no interruptions → `@deep`
+   - No, can handle interruptions → `@quick`
 
 ## Priority Levels
 

@@ -11,7 +11,7 @@ Guide multi-step outcomes through the full GTD project lifecycle inside the Obsi
 
 ```bash
 # Create a new project note and auto-link it in Projects List
-python tools/create_project.py "Website Redesign" --context "@pc-deep" --yes
+python tools/create_project.py "Website Redesign" --context "@deep" --yes
 
 # Move an existing task into the project note while preserving metadata
 python tools/move_task.py --source GTD/Dashboard.md --line 42 --dest "GTD/Projects/Website Redesign.md"

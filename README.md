@@ -176,12 +176,16 @@ python tools/create_project.py "Home Renovation" --context "@home"
 
 # Use custom template
 python tools/create_project.py "Research" --template my_template.md
+
+# Auto-confirm (useful for agentic/batch runs)
+python tools/create_project.py "Research AI Tools" --context "@ai" --yes
 ```
 
-**Project structure:**
+**Project behavior:**
 - Created in `GTD/Projects/` folder
 - Auto-added to `Projects List.md`
 - Includes: Purpose, Next Actions, Notes, Resources
+- If the file exists, it will prompt to overwrite (or use `--yes`)
 
 ### move_task.py
 
@@ -193,12 +197,65 @@ python tools/move_task.py --source GTD/Dashboard.md --line 42 --dest GTD/PC.md
 
 # Move to project file
 python tools/move_task.py --source GTD/PC.md --line 10 --dest "GTD/Projects/Website.md"
+
+# Move by exact match (stable targeting)
+python tools/move_task.py --source Daily/2026-01-21.md --match "Buy compost bins @out" --dest "GTD/Projects/Garden.md"
+
+# Regex match with occurrence
+python tools/move_task.py --source Daily/2026-01-21.md --match "Buy .* bins" --match-regex --occurrence 2 --dest "GTD/Projects/Garden.md"
+
+# Auto-confirm
+python tools/move_task.py --source GTD/PC.md --line 10 --dest "GTD/Projects/Website.md" --yes
 ```
 
 **Features:**
 - Preserves all metadata (dates, tags, etc.)
 - Moves subtasks along with parent
-- Confirms before moving
+- Supports stable matching with `--match`, `--match-regex`, `--occurrence`
+- `--yes` skips confirmation
+
+### edit_task.py
+
+Edit a task description and optionally add metadata.
+
+```bash
+# Edit by line number
+python tools/edit_task.py --file GTD/Dashboard.md --line 42 --description "Call dentist for appointment"
+
+# Edit by exact match (stable targeting)
+python tools/edit_task.py --file Daily/2026-01-21.md --match "car budget number" --description "Lock in car budget" --context "@quick"
+
+# Add scheduled and due dates
+python tools/edit_task.py --file Daily/2026-01-21.md --match "Buy instax camera" --description "Buy instax camera" --context "@out" --scheduled +3 --due 2026-02-01
+
+# Set priority (⏫, 🔼, 🔽, ⏬)
+python tools/edit_task.py --file Daily/2026-01-21.md --match "Research ETF idea" --description "Research ETF idea" --priority "🔼"
+
+# Auto-confirm
+python tools/edit_task.py --file Daily/2026-01-21.md --match "Look at 0%" --description "Look at 0% credit cards" --context "@deep" --yes
+```
+
+**Scheduled/due date formats:** `today`, `tomorrow`, `+N`, `YYYY-MM-DD`
+
+### mark_done.py
+
+Mark a task as done and add a completion date.
+
+```bash
+# Mark done by line
+python tools/mark_done.py --file Daily/2026-01-21.md --line 27
+
+# Mark done by exact match
+python tools/mark_done.py --file Daily/2026-01-21.md --match "call with partner"
+
+# Use a specific date
+python tools/mark_done.py --file Daily/2026-01-21.md --match "call with partner" --date 2026-01-23
+
+# Auto-confirm
+python tools/mark_done.py --file Daily/2026-01-21.md --match "call with partner" --date today --yes
+```
+
+**Done date formats:** `today`, `yesterday`, `YYYY-MM-DD`
 
 ### weekly_review.py
 
@@ -257,9 +314,9 @@ settings:
   create_backups: false  # Disabled - rely on git instead
   default_context: "@pc"
   available_contexts:
-    - "@pc-deep"      # Deep focus work (2+ hours)
-    - "@pc-quick"     # Quick wins (<15 min)
-    - "@pc-batch"     # Similar tasks to batch
+    - "@deep"      # Deep focus work (2+ hours)
+    - "@quick"     # Quick wins (<15 min)
+    - "@batch"     # Similar tasks to batch
     - "@pc"           # Legacy - migrate to specific contexts
     - "@work"
     - "@home"
@@ -267,7 +324,6 @@ settings:
     - "@out"
     - "@garden"
     - "@ai"
-    - "@someday"
     - "@ponderables"
     - "@stuck"
 ```
@@ -292,16 +348,20 @@ Example task:
 
 Tasks are organized by context (where/when/with whom):
 
-- `@pc` - Requires computer
+- `@deep` - Deep focus work (2+ hours)
+- `@quick` - Quick wins (<15 min)
+- `@batch` - Similar tasks to batch together
+- `@pc` - Legacy computer context (migrate to specific contexts)
 - `@work` - Work context
 - `@home` - Home tasks
 - `@partner` - Requires partner
 - `@out` - Errands
 - `@garden` - Garden work
 - `@ai` - AI-related
-- `@someday` - Someday/maybe
 - `@ponderables` - To think about
 - `@stuck` - Blocked items
+
+**Note:** `@someday` is deprecated. Use lowest priority (⏬) for someday/maybe items.
 
 ## Agent Skills
 
