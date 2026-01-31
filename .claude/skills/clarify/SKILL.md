@@ -221,6 +221,14 @@ After processing, tasks with context tags will appear in their respective Dashbo
 
 Tasks that remain without context tags will continue to appear in "To Process" section.
 
+## Gmail Follow-up
+
+After finishing the Obsidian inbox (or when the user says they are done), offer to switch to the Gmail inbox and perform a similar clarify/triage flow (suggest actions, confirm, then execute). Use the gmcli skill/tooling for Gmail actions and follow the same confirmation-first pattern.
+
+Gmail clarify defaults:
+- When creating tasks from Gmail, default to today’s daily file and archive the email unless the user explicitly says not to.
+- When suggesting options for Gmail triage, include a recommended context tag (e.g., @batch/@quick) and note that archiving is the default after action.
+
 ## Example Session
 
 ```
