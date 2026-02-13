@@ -23,7 +23,8 @@ python tools/process_item.py --file GTD/Dashboard.md --line 42
 
 ### Stable Targeting (Avoid Line-Shift Errors)
 
-When batch editing or moving tasks, prefer description matching over line numbers:
+When batch editing or moving tasks, prefer description matching over line numbers.
+**Known gotcha:** `--match` may fail on raw URLs or tasks with special characters. If `--match` returns "No matching tasks found", fall back to `--line N` targeting instead.
 ```bash
 # Edit by exact description match
 python tools/edit_task.py --file Daily/2026-01-17.md --match "Buy compost bins" --context "@out" --yes
@@ -52,7 +53,7 @@ Agents should:
 
 ### Batch Suggestion Mode (Default)
 
-Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) for inbox processing by default. If an item clearly needs multiple steps, include a sub-option to promote it to a project (e.g., `1.3 Create project: "<Name>" and seed next actions`). When a task could be accelerated by an LLM agent (drafting, summarizing, research, email), include a sub-option to delegate to an agent (e.g., `1.4 Use LLM agent to draft/research/summarize`). After selections, proceed unless a step is ambiguous, destructive, or conflicting—then ask to confirm those specific items.
+Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) for inbox processing by default. If an item clearly needs multiple steps, include a sub-option to promote it to a project (e.g., `1.3 Create project: "<Name>" and seed next actions`). When suggesting actions, always look for opportunities to complete the task using an LLM agent (e.g., Claude Code CLI, Codex CLI, Gemini CLI). When a task could be accelerated by an LLM agent (drafting, summarizing, research, email), include a sub-option to delegate to an agent (e.g., `1.4 Use LLM agent to draft/research/summarize`) and also suggest adding `@ai` context tag to those tasks. After selections, proceed unless a step is ambiguous, destructive, or conflicting-then ask to confirm those specific items.
 
 ## Workflow
 
@@ -93,13 +94,15 @@ Repeat until the user stops or the inbox is cleared.
 
 ### 1.1 Link-Heavy Items
 
-For raw URLs, default to actions like “Read/Watch [source]” with `@batch` unless the user prefers archiving or a different context.
+For raw URLs, default to actions like "Read/Watch [source]" with `@batch` unless the user prefers archiving or a different context.
 Always preserve the original link in the rewritten task line.
 Place links before context tags (e.g., `Task https://... @batch`).
 
+If the task contains a TikTok or Instagram URL, auto-assign `@batch` in the background without presenting options, then continue with the rest.
+
 ### 1.2 Scheduling Shorthand
 
-If the user says a weekday (e.g., “Tuesday” or “Thursday”), schedule the task for the first upcoming occurrence of that day.
+If the user says a weekday (e.g., "Tuesday" or "Thursday"), schedule the task for the first upcoming occurrence of that day.
 
 ### 1.3 Reference Creation
 
@@ -223,11 +226,16 @@ Tasks that remain without context tags will continue to appear in "To Process" s
 
 ## Gmail Follow-up
 
-After finishing the Obsidian inbox (or when the user says they are done), offer to switch to the Gmail inbox and perform a similar clarify/triage flow (suggest actions, confirm, then execute). Use the gmcli skill/tooling for Gmail actions and follow the same confirmation-first pattern.
+If the user explicitly asks to clarify Gmail (e.g., "clarify my gmail inbox"), go straight to Gmail triage — do **not** require processing the Obsidian inbox first. If the user runs a general `/clarify` without specifying, process the Obsidian inbox first, then offer to switch to Gmail.
+
+Use the gmcli skill/tooling for Gmail actions and follow the same confirmation-first pattern.
 
 Gmail clarify defaults:
-- When creating tasks from Gmail, default to today’s daily file and archive the email unless the user explicitly says not to.
+- When creating tasks from Gmail, default to today's daily file and archive the email unless the user explicitly says not to.
 - When suggesting options for Gmail triage, include a recommended context tag (e.g., @batch/@quick) and note that archiving is the default after action.
+- For any "read" task created from Gmail, always include a Gmail URL that opens the email directly. Use `gmcli <email> url <threadId>` to generate the link, and place it after the task description before the context tag.
+- Archive **all** triaged emails by default (including ones with tasks created), not just the ones with no action.
+- `gmcli labels` does not support comma-separated thread IDs. Archive emails individually in a loop.
 
 ## Example Session
 

@@ -48,6 +48,7 @@ settings:
   available_contexts:
     - "@deep"      # Deep focus work (2+ hours, high concentration)
     - "@quick"     # Quick wins (<15 min, low effort)
+    - "@read"      # Reading tasks
     - "@batch"     # Similar tasks to batch together
     - "@work"
     - "@home"
@@ -57,7 +58,6 @@ settings:
     - "@ai"
     - "@ponderables"
     - "@stuck"
-    # Legacy - migrate to @deep/quick/batch
-    - "@pc"
+    # "@pc" - retired, migrated to @deep/@quick/@batch/@read
 
   # Note: @someday context is deprecated. Use lowest priority (⏬) for someday/maybe items instead.

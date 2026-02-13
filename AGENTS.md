@@ -12,6 +12,7 @@ This repository provides a Python CLI toolkit plus reusable skills for AI agents
 ## Skills
 
 - Primary skills live in `.claude/skills/*/SKILL.md`.
+- Available skills: clarify, organize, project, purge, review, **friction**.
 - If your agent expects a different skills path, mirror or symlink those folders (for example, `.codex/skills/`).
 - Always follow the instructions inside each `SKILL.md` when using a skill.
 

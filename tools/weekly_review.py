@@ -122,6 +122,10 @@ def find_overdue_tasks(vault_path):
                 if not task or task['is_done']:
                     continue
 
+                # Skip lowest-priority items (someday/maybe)
+                if task.get('priority') == '⏬':
+                    continue
+
                 # Check if overdue
                 is_overdue = False
                 if task['scheduled_date'] and task['scheduled_date'] < today:
