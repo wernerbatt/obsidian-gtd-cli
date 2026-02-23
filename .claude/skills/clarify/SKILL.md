@@ -15,10 +15,33 @@ cd /path/to/obsidian-gtd-cli
 python tools/find_tasks.py --mode inbox
 ```
 
+Add a task (to today's daily note or a specific file):
+```bash
+cd /path/to/obsidian-gtd-cli
+# Add to today's daily note
+python tools/add_task.py --today --task "Buy groceries" --context "@out" --yes
+
+# Add to a specific file
+python tools/add_task.py --file Daily/2026-01-17.md --task "Read article" --context "@read" --yes
+
+# Add under a specific heading
+python tools/add_task.py --file GTD/Dashboard.md --task "New idea" --heading "Notes" --yes
+
+# Add with scheduling and priority
+python tools/add_task.py --today --task "Call dentist" --context "@quick" --due tomorrow --yes
+python tools/add_task.py --today --task "Maybe read this" --priority "⏬" --yes
+```
+
 Process a specific task interactively:
 ```bash
 cd /path/to/obsidian-gtd-cli
 python tools/process_item.py --file GTD/Dashboard.md --line 42
+```
+
+### Open Today's Daily Note in Obsidian
+
+```bash
+cmd.exe /c start "" "obsidian://daily"
 ```
 
 ### Stable Targeting (Avoid Line-Shift Errors)
@@ -100,6 +123,33 @@ Place links before context tags (e.g., `Task https://... @batch`).
 
 If the task contains a TikTok or Instagram URL, auto-assign `@batch` in the background without presenting options, then continue with the rest.
 
+#### TikTok Title Resolution
+
+When a task contains a bare TikTok URL (e.g., `https://vm.tiktok.com/...`), resolve it to a descriptive markdown link using the playwright-cli skill:
+
+```bash
+playwright-cli open "<tiktok-url>" --browser=chromium
+# Extract the page title (format: "<description> | TikTok")
+# Also check the snapshot YAML for the video description text
+playwright-cli close
+```
+
+Then rewrite the task line from:
+```
+- [ ] https://vm.tiktok.com/ZNRfjoYEP/ @batch
+```
+to:
+```
+- [ ] [Short descriptive title](https://vm.tiktok.com/ZNRfjoYEP/) @batch
+```
+
+Guidelines for the title:
+- Write a short, natural, lowercase title (sentence case) summarising the video content
+- Derive it from the page title and/or the video description in the snapshot
+- Strip "| TikTok" suffix and any hashtags — just capture the gist
+- Keep it concise (under ~80 chars)
+- Batch multiple TikTok URLs in a single browser session to save time (use `goto` instead of `open` for subsequent URLs)
+
 ### 1.2 Scheduling Shorthand
 
 If the user says a weekday (e.g., "Tuesday" or "Thursday"), schedule the task for the first upcoming occurrence of that day.
@@ -145,11 +195,9 @@ Tasks are organized by context (where/when/with whom/what focus can you do it):
 - `@pc` - Legacy context (being phased out - use specific contexts above)
 
 **Other Contexts:**
-- `@work` - Work context
-- `@home` - Home tasks
+- `@work` - Work context (retired — use @deep/@quick/@batch instead)
 - `@partner` - Requires partner
-- `@out` - Errands/outside
-- `@garden` - Garden work
+- `@out` - Errands/outside/garden
 - `@ai` - AI-related tasks
 - `@ponderables` - Things to think about
 - `@stuck` - Blocked items
@@ -218,7 +266,6 @@ When scheduling, you can use:
 
 After processing, tasks with context tags will appear in their respective Dashboard.md sections:
 - @pc tasks → PC section
-- @work tasks → Work section
 - @home tasks → Home section
 - etc.
 
@@ -231,11 +278,12 @@ If the user explicitly asks to clarify Gmail (e.g., "clarify my gmail inbox"), g
 Use the gmcli skill/tooling for Gmail actions and follow the same confirmation-first pattern.
 
 Gmail clarify defaults:
-- When creating tasks from Gmail, default to today's daily file and archive the email unless the user explicitly says not to.
+- When creating tasks from Gmail, use `add_task.py --today` to add to today's daily note and archive the email unless the user explicitly says not to.
 - When suggesting options for Gmail triage, include a recommended context tag (e.g., @batch/@quick) and note that archiving is the default after action.
 - For any "read" task created from Gmail, always include a Gmail URL that opens the email directly. Use `gmcli <email> url <threadId>` to generate the link, and place it after the task description before the context tag.
 - Archive **all** triaged emails by default (including ones with tasks created), not just the ones with no action.
 - `gmcli labels` does not support comma-separated thread IDs. Archive emails individually in a loop.
+- **Always use `add_task.py --today`** to add tasks to today's daily note — it uses the system clock, which is authoritative. Do not compute today's date from the system prompt (it may be stale).
 
 ## Example Session
 
@@ -307,6 +355,7 @@ Scheduled date: tomorrow
 
 ## Related Tools
 
+- `add_task.py` - Add a new task to today's daily note or any file (supports `--today`, `--heading`, context, dates, priority)
 - `add_context.py` - Batch add context tags to multiple tasks
 - `create_project.py` - Create project files for multi-step outcomes
 - `weekly_review.py` - Review all contexts and projects

@@ -50,11 +50,11 @@ settings:
     - "@quick"     # Quick wins (<15 min, low effort)
     - "@read"      # Reading tasks
     - "@batch"     # Similar tasks to batch together
-    - "@work"
-    - "@home"
+    # "@work" - retired
+    # "@home" - retired, tasks reassigned to @quick/@partner/@out/@garden/@batch
     - "@partner"
     - "@out"
-    - "@garden"
+    # "@garden" - retired, tasks reassigned to @out
     - "@ai"
     - "@ponderables"
     - "@stuck"
