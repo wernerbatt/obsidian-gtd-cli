@@ -28,6 +28,14 @@ The weekly review is the most critical GTD practice. It's your opportunity to:
 2. Get Current - Review all your commitments
 3. Get Creative - Think about new possibilities
 
+### Step 0: Read Last Week's Summary
+
+Before starting, check for the most recent weekly review summary:
+```bash
+ls -t /path/to/vault/GTD/Weekly\ Review\ *Summary.md | head -1
+```
+Read it and surface any "Still On The Radar" items from last time. These become the first things to check in the current review — were they addressed, or do they carry forward?
+
 ## Tool: weekly_review.py
 
 Generate comprehensive weekly review reports with metrics and checklists.
@@ -76,6 +84,17 @@ The weekly review report includes:
 - Upcoming week preview
 - Future commitments
 
+**Live Calendar Data (gccli):**
+When running the review interactively, pull real calendar events using gccli:
+```bash
+# Past week
+gccli user@example.com events primary --from YYYY-MM-DDTHH:MM:SSZ --to YYYY-MM-DDTHH:MM:SSZ
+# Also check Secondary Calendar and partner's calendar:
+gccli user@example.com events secondary-calendar-id@group.calendar.google.com --from ... --to ...
+gccli user@example.com events partner@example.com --from ... --to ...
+```
+Note: Date format must be `YYYY-MM-DDTHH:MM:SSZ` (UTC with Z suffix). Plain `YYYY-MM-DD` returns Bad Request.
+
 **Waiting For:**
 - Review @waiting items
 - Follow up on pending responses
@@ -111,6 +130,35 @@ The tool complements your existing weekly review checklist by providing metrics 
 **Quick Daily Reviews:**
 - Morning: Review today's scheduled tasks
 - Evening: Process inbox, update tomorrow's list
+
+## Infrastructure Check
+
+During the review, verify that the daily overdue script ran recently:
+```bash
+cd /path/to/vault && git log --oneline -3
+```
+Look for "Automated task update" commits. If the last one is >2 days old, the scheduled task (`Run daily scripts` in Windows Task Scheduler) may be broken. The script lives at `scripts/overdue.py` and is called by `scripts/run_daily_scripts.bat`.
+
+## Context & Priority Distribution
+
+As part of Get Current, generate context and priority distribution counts for all active (non-⏬) tasks:
+```bash
+# Context distribution
+cd /path/to/vault && grep -rn "^- \[ \]" --include="*.md" | grep -v "⏬" | grep -v "Templates/" | grep -v "Checklists/" | grep -v "\.obsidian" | sed -n 's/.*\(@[a-z]*\).*/\1/p' | sort | uniq -c | sort -rn
+
+# Priority distribution
+grep -rn "^- \[ \]" --include="*.md" | grep -v "⏬" | grep -v "Templates/" | grep -v "Checklists/" | grep -v "\.obsidian" | grep -oP '[🔺⏫🔼🔽]' | sort | uniq -c | sort -rn
+```
+Track these week-over-week to spot trends (growing lists, priority inflation, etc.).
+
+## Weekly Review Summary File
+
+At the end of the review, save a summary to `GTD/Weekly Review YYYY-MM-DD Summary.md`. Follow the format of prior summaries in that folder. Include:
+- Metrics (inbox, overdue, stale projects, active tasks, completed)
+- Context and priority distribution
+- Calendar highlights (past and upcoming week)
+- Actions taken (purge results, fixes, infrastructure changes)
+- Items still on the radar for next time
 
 ## Common Review Findings
 
@@ -269,6 +317,12 @@ Result: Clean, current, trusted system!
 - Weekly Review Checklist: `GTD/Checklists/Weekly Review Checklist.md`
 - Projects List: `GTD/Projects List.md`
 - Dashboard: `GTD/Dashboard.md`
+
+## Closing the Review
+
+**Always end the review by saving a weekly summary.** This is the last step — do not consider the review complete without it.
+
+Save to `GTD/Weekly Review YYYY-MM-DD Summary.md` following the format of prior summaries. The agent should generate this automatically at the end of the review session, even if the user doesn't ask.
 
 ## Tips
 

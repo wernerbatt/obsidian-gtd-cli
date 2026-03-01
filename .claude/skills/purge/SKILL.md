@@ -63,12 +63,12 @@ The agent scans all open tasks **excluding ⏬ (lowest priority / Someday-Maybe)
 | Category | Criteria | Default Action |
 |----------|----------|----------------|
 | **Empty** | Blank `- [ ]` lines with no content | Drop |
-| **Stale** | Open, no scheduled/due date, created >4 weeks ago, no activity | Candidate for drop or demote |
+| **Stale** | Open, no scheduled/due date, no context, created >4 weeks ago, no activity | Candidate for drop or demote |
 | **Overdue** | Scheduled/due date in the past | Reschedule, do, or drop |
 | **Duplicate** | Very similar description to another open task | Merge into one |
 | **Vague** | No concrete action verb, unclear next step | Rewrite or drop |
 | **Completed** | Context suggests already done (e.g., event passed) | Mark done |
-| **Orphaned daily note tasks** | Open tasks in old daily notes, never processed | Process, move, or drop |
+| **Orphaned daily note tasks** | Open tasks in old daily notes, no scheduled date, no context, never processed | Process, move, or drop |
 | **Blocked chain issues** | Project tasks with broken/missing dependency chains | Fix chain or simplify |
 | **Broken system items** | Recurring tasks that lost recurrence, placeholder project tasks | Fix |
 
@@ -76,6 +76,7 @@ When scanning, always filter out:
 - Tasks with ⏬ priority (review these in **someday purge** mode instead)
 - Completed tasks
 - Tasks in Templates, Checklists folders
+- **Tasks with a scheduled date (⏳) don't need a context tag** — they will surface when the date arrives. Skip them in orphan/no-context triage.
 
 ```bash
 # The agent will use these tools during triage:
@@ -95,13 +96,21 @@ Work through each context list one at a time. For each context, present all acti
 |------|--------|--------------|
 | **keep** | Keep as-is | No change |
 | **drop** | Delete permanently | Task removed from file |
-| **demote** | Move to Someday/Maybe | Add ⏬ priority |
+| **demote** | Reduce priority by one step | Demote one level (see priority ladder below) |
 | **done** | Already completed | Mark done with ✅ |
 | **merge** | Combine with another task | Keep one, mark other done |
 | **rewrite** | Clarify the task | Edit description to concrete next action |
 | **reschedule** | Push to future date | Update ⏳ date |
 | **move** | Move to different context | Change context tag |
 | **project** | Promote to project | Create project note, seed next actions |
+
+**Priority ladder (Obsidian Tasks plugin — 6 levels):**
+
+🔺 highest → ⏫ high → 🔼 medium → (normal) → 🔽 low → ⏬ lowest
+
+When demoting, **move one step down by default** — not straight to ⏬. For example: 🔼 → normal, normal → 🔽. Only demote to ⏬ if the user explicitly asks to send something to Someday/Maybe.
+
+Note: `edit_task.py` cannot remove a priority (only set one). To demote from 🔼/⏫/🔺 to normal, edit the file directly to strip the priority emoji.
 
 **Context processing order** (heaviest lists first):
 1. Orphaned daily note tasks (biggest source of bloat)
