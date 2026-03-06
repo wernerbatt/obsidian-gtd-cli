@@ -2,8 +2,8 @@
 """
 Move a task from one file to another while preserving metadata.
 
-This tool helps reorganize tasks between files, useful for moving tasks
-to context files, project files, or archiving completed tasks.
+Uses Obsidian CLI for append to destination; direct file I/O for
+removal from source (no CLI equivalent for line deletion).
 
 Usage:
     python tools/move_task.py --source GTD/Dashboard.md --line 42 --dest GTD/PC.md
@@ -11,143 +11,75 @@ Usage:
 """
 
 import argparse
-import re
 from pathlib import Path
+
 from gtd_common import (
     get_vault_path,
-    load_config,
     parse_task_line,
-    create_backup,
-    find_task_lines_by_match
+    find_task_lines_by_match,
 )
+import obsidian_cli as obs
 
 
-def move_task(source_file, line_num, dest_file, create_backups=True, auto_confirm=False):
+def move_task(source_rel, line_num, dest_rel, auto_confirm=False):
     """
-    Move a task from source file to destination file.
-
-    Args:
-        source_file (Path): Source file path
-        line_num (int): Line number of task in source file (1-indexed)
-        dest_file (Path): Destination file path
-        create_backups (bool): Whether to create backup files
-
-    Returns:
-        bool: True if successful, False otherwise
+    Move a task (and subtasks) from source file to destination file.
     """
     vault_path = get_vault_path()
+    source_path = vault_path / source_rel
 
-    # Read source file
-    try:
-        with open(source_file, 'r', encoding='utf-8') as f:
-            source_lines = f.readlines()
-    except Exception as e:
-        print(f"Error reading source file: {e}")
-        return False
+    with open(source_path, 'r', encoding='utf-8') as f:
+        source_lines = f.readlines()
 
-    # Validate line number
     if line_num < 1 or line_num > len(source_lines):
         print(f"Error: Invalid line number {line_num} (file has {len(source_lines)} lines)")
         return False
 
-    # Get task line
     task_line = source_lines[line_num - 1]
     task = parse_task_line(task_line, line_num)
-
     if not task:
         print(f"Error: Line {line_num} is not a task")
         return False
 
-    # Check for subtasks (indented tasks below)
+    # Collect subtasks (indented tasks immediately following)
     subtask_lines = []
-    current_indent = task['indent']
-
-    # Look for subtasks (tasks with greater indentation immediately following)
     for i in range(line_num, len(source_lines)):
-        line = source_lines[i]
+        subtask = parse_task_line(source_lines[i], i + 1)
+        if subtask and subtask['indent'] > task['indent']:
+            subtask_lines.append(source_lines[i])
+        elif i > line_num - 1:
+            break
 
-        # Check if it's a task
-        subtask = parse_task_line(line, i + 1)
-        if subtask and subtask['indent'] > current_indent:
-            subtask_lines.append(line)
-        else:
-            # Stop when we hit a non-task or task with same/less indentation
-            if i > line_num - 1:
-                break
-
-    # Display task info
     print(f"\nMoving task:")
-    print(f"  From: {source_file.relative_to(vault_path)}:{line_num}")
-    print(f"  To:   {dest_file.relative_to(vault_path)}")
+    print(f"  From: {source_rel}:{line_num}")
+    print(f"  To:   {dest_rel}")
     print(f"  Task: {task['description']}")
     if subtask_lines:
         print(f"  Subtasks: {len(subtask_lines)}")
 
-    # Confirm
     if not auto_confirm:
         response = input("\nProceed? (yes/no): ")
-        if response.lower() not in ['yes', 'y']:
+        if response.lower() not in ('yes', 'y'):
             print("Cancelled.")
             return False
 
-    # Create backups
-    if create_backups:
-        create_backup(source_file)
-        if dest_file.exists():
-            create_backup(dest_file)
-
-    # Remove task (and subtasks) from source
-    lines_to_remove = [line_num - 1]
-    if subtask_lines:
-        lines_to_remove.extend(range(line_num, line_num + len(subtask_lines)))
-
-    # Remove in reverse order to preserve indices
+    # Remove from source (direct I/O — no CLI equivalent)
+    lines_to_remove = [line_num - 1] + list(range(line_num, line_num + len(subtask_lines)))
     for idx in sorted(lines_to_remove, reverse=True):
         if idx < len(source_lines):
             del source_lines[idx]
 
-    # Write updated source file
-    try:
-        with open(source_file, 'w', encoding='utf-8') as f:
-            f.writelines(source_lines)
-    except Exception as e:
-        print(f"Error writing source file: {e}")
-        return False
+    with open(source_path, 'w', encoding='utf-8') as f:
+        f.writelines(source_lines)
 
-    # Add to destination file
-    # Create destination if it doesn't exist
-    if not dest_file.exists():
-        dest_file.parent.mkdir(parents=True, exist_ok=True)
-        dest_lines = []
-    else:
-        try:
-            with open(dest_file, 'r', encoding='utf-8') as f:
-                dest_lines = f.readlines()
-        except Exception as e:
-            print(f"Error reading destination file: {e}")
-            return False
+    # Append to destination via CLI
+    content = task_line.rstrip('\n')
+    for sl in subtask_lines:
+        content += f"\\n{sl.rstrip(chr(10))}"
 
-    # Append task (and subtasks) to destination
-    dest_lines.append(task_line)
-    for subtask_line in subtask_lines:
-        dest_lines.append(subtask_line)
-
-    # Ensure newline at end
-    if dest_lines and not dest_lines[-1].endswith('\n'):
-        dest_lines[-1] += '\n'
-
-    # Write destination file
-    try:
-        with open(dest_file, 'w', encoding='utf-8') as f:
-            f.writelines(dest_lines)
-    except Exception as e:
-        print(f"Error writing destination file: {e}")
-        return False
+    obs.append_to_file(content, path=dest_rel)
 
     print(f"\n✓ Task moved successfully!")
-    if create_backups:
-        print("  Backup files created with .bak extension")
-
     return True
 
 
@@ -157,87 +89,55 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Move task from Dashboard to PC context
   python tools/move_task.py --source GTD/Dashboard.md --line 42 --dest GTD/PC.md
-
-  # Move task to project file
   python tools/move_task.py --source GTD/PC.md --line 10 --dest GTD/Projects/Website.md
-
-  # Move task by matching description
-  python tools/move_task.py --source Daily/2025-12-29.md --match "Buy instax camera @out" --dest GTD/Projects/Gifts.md
-
-The tool will:
-- Preserve all task metadata (emoji dates, context tags, etc.)
-- Move subtasks (indented tasks) along with the parent
-- Create backups before modifying files
-- Confirm before making changes
+  python tools/move_task.py --source Daily/2025-12-29.md --match "Buy instax" --dest GTD/Projects/Gifts.md
         """
     )
 
     parser.add_argument("--source", "-s", required=True, metavar="FILE",
-                       help="Source file (relative to vault)")
+                        help="Source file (relative to vault)")
     line_group = parser.add_mutually_exclusive_group(required=True)
     line_group.add_argument("--line", "-l", type=int, metavar="N",
-                           help="Line number of task to move (1-indexed)")
+                            help="Line number of task to move")
     line_group.add_argument("--match", metavar="TEXT",
-                           help="Match exact task description (use --match-regex for patterns)")
+                            help="Match task description")
     parser.add_argument("--match-regex", action="store_true",
-                       help="Treat --match as regex")
+                        help="Treat --match as regex")
     parser.add_argument("--occurrence", type=int, default=1, metavar="N",
-                       help="Match occurrence to use when multiple tasks match (default: 1)")
+                        help="Which match occurrence (default: 1)")
     parser.add_argument("--dest", "-d", required=True, metavar="FILE",
-                       help="Destination file (relative to vault)")
+                        help="Destination file (relative to vault)")
     parser.add_argument("--yes", "-y", action="store_true",
-                       help="Auto-confirm without prompting (for agentic use)")
+                        help="Auto-confirm without prompting")
 
     args = parser.parse_args()
 
-    # Get vault path and resolve file paths
     vault_path = get_vault_path()
-    source_file = vault_path / args.source
-    dest_file = vault_path / args.dest
-
-    # Validate source file exists
-    if not source_file.exists():
+    source_path = vault_path / args.source
+    if not source_path.exists():
         print(f"Error: Source file not found: {args.source}")
         return
 
-    # Validate source and dest are different
-    if source_file.resolve() == dest_file.resolve():
+    if (vault_path / args.source).resolve() == (vault_path / args.dest).resolve():
         print("Error: Source and destination files are the same")
         return
 
-    # Resolve line number via match if provided
     line_num = args.line
     if args.match is not None:
-        try:
-            with open(source_file, 'r', encoding='utf-8') as f:
-                source_lines = f.readlines()
-        except Exception as e:
-            print(f"Error reading source file: {e}")
-            return
-
-        matches = find_task_lines_by_match(source_lines, args.match, use_regex=args.match_regex)
+        with open(source_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        matches = find_task_lines_by_match(lines, args.match, use_regex=args.match_regex)
         if not matches:
             print("Error: No matching tasks found")
             return
-        if args.occurrence < 1:
-            print("Error: Occurrence must be >= 1")
-            return
         if args.occurrence > len(matches):
-            print(f"Error: Only found {len(matches)} match(es); occurrence {args.occurrence} is out of range")
+            print(f"Error: Only found {len(matches)} match(es); occurrence {args.occurrence} out of range")
             return
         line_num = matches[args.occurrence - 1]
         print(f"Matched {len(matches)} task(s); using occurrence {args.occurrence} at line {line_num}")
 
-    # Move task
-    move_task(
-        source_file,
-        line_num,
-        dest_file,
-        create_backups=False,  # Disabled - rely on git
-        auto_confirm=args.yes
-    )
+    move_task(args.source, line_num, args.dest, auto_confirm=args.yes)
 
 
 if __name__ == "__main__":

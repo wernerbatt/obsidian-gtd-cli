@@ -2,111 +2,60 @@
 """
 Edit a task's description at a specific file and line number.
 
-This tool allows you to change the description of an existing task while
-preserving its checkbox status and position in the file.
+Uses Obsidian CLI for reads and direct file I/O for the line-level write
+(the CLI has no line-edit command).
 
 Usage:
-    python tools/edit_task.py --file GTD/Dashboard.md --line 42 --description "New task description"
-    python tools/edit_task.py --file Daily/2025-12-29.md --line 27 --description "Discuss instax 99 with partner" --context "@partner" --due tomorrow
+    python tools/edit_task.py --file GTD/Dashboard.md --line 42 --description "New description"
+    python tools/edit_task.py --file Daily/2025-12-29.md --match "Buy instax" --description "Buy instax camera" --context "@out"
 """
 
 import argparse
-from pathlib import Path
-from datetime import datetime, date, timedelta
+import re
+
 from gtd_common import (
     get_vault_path,
     load_config,
     parse_task_line,
-    create_backup,
     add_metadata_to_task,
-    find_task_lines_by_match
+    find_task_lines_by_match,
+    parse_date_string,
 )
-import re
+import obsidian_cli as obs
 
 
-def parse_date_string(date_str):
+def edit_task(file_rel, line_num, new_description, *, context=None,
+              scheduled_date=None, due_date=None, priority=None,
+              auto_confirm=False, match_text=None, match_regex=False,
+              occurrence=1):
     """
-    Parse date string into YYYY-MM-DD format.
+    Edit a task's description and optionally add/update metadata.
 
-    Args:
-        date_str (str): Date string (today, tomorrow, +N, YYYY-MM-DD)
-
-    Returns:
-        str: Date in YYYY-MM-DD format
-    """
-    date_str = date_str.strip().lower()
-    today = date.today()
-
-    if date_str == 'today':
-        return str(today)
-    elif date_str == 'tomorrow':
-        return str(today + timedelta(days=1))
-    elif date_str.startswith('+'):
-        try:
-            days = int(date_str[1:])
-            return str(today + timedelta(days=days))
-        except ValueError:
-            raise ValueError(f"Invalid format: {date_str}. Use +N for days from now")
-    else:
-        # Try parsing as YYYY-MM-DD
-        try:
-            parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
-            return str(parsed)
-        except ValueError:
-            raise ValueError(f"Invalid date format: {date_str}. Use YYYY-MM-DD")
-
-
-def edit_task(file_path, line_num, new_description, context=None, scheduled_date=None,
-              due_date=None, priority=None, create_backups=True, auto_confirm=False,
-              match_text=None, match_regex=False, occurrence=1):
-    """
-    Edit a task's description and optionally add metadata.
-
-    Args:
-        file_path (Path): Path to file containing task
-        line_num (int): Line number of task (1-indexed)
-        new_description (str): New task description
-        context (str, optional): Context tag to add
-        scheduled_date (str, optional): Scheduled date to add
-        due_date (str, optional): Due date to add
-        priority (str, optional): Priority symbol to add
-        create_backups (bool): Whether to create backup file
-        auto_confirm (bool): Skip confirmation prompt (for agentic use)
-
-    Returns:
-        bool: True if successful
+    Reads via Obsidian CLI, writes via direct file I/O (line-level edit).
     """
     vault_path = get_vault_path()
+    file_path = vault_path / file_rel
 
     # Read file
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-    except Exception as e:
-        print(f"Error reading file: {e}")
-        return False
+    with open(file_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
 
-    # Resolve line number by match if needed
+    # Resolve line number by match
     if line_num is None and match_text:
         matches = find_task_lines_by_match(lines, match_text, use_regex=match_regex)
         if not matches:
             print("Error: No matching tasks found")
             return False
-        if occurrence < 1:
-            print("Error: Occurrence must be >= 1")
-            return False
         if occurrence > len(matches):
-            print(f"Error: Only found {len(matches)} match(es); occurrence {occurrence} is out of range")
+            print(f"Error: Only found {len(matches)} match(es); occurrence {occurrence} out of range")
             return False
         line_num = matches[occurrence - 1]
         print(f"Matched {len(matches)} task(s); using occurrence {occurrence} at line {line_num}")
 
-    # Validate line number
     if line_num is None or line_num < 1 or line_num > len(lines):
         print(f"Error: Invalid line number {line_num} (file has {len(lines)} lines)")
         return False
 
-    # Get task line
     task_line = lines[line_num - 1]
     task = parse_task_line(task_line, line_num)
 
@@ -114,187 +63,125 @@ def edit_task(file_path, line_num, new_description, context=None, scheduled_date
         print(f"Error: Line {line_num} is not a task")
         return False
 
-    # Display current task
-    print(f"\nFile: {file_path.relative_to(vault_path)}:{line_num}")
+    print(f"\nFile: {file_rel}:{line_num}")
     print(f"Current: {task['description']}")
     print(f"New:     {new_description}")
 
-    # Preserve existing metadata from old task unless explicitly overridden
     old_desc = task['description']
 
-    # Preserve scheduled date if not explicitly provided
+    # Preserve existing metadata unless explicitly overridden
     if scheduled_date is None:
-        sched_match = re.search(r'⏳\s*(\d{4}-\d{2}-\d{2})', old_desc)
-        if sched_match:
-            scheduled_date = sched_match.group(1)
+        m = re.search(r'⏳\s*(\d{4}-\d{2}-\d{2})', old_desc)
+        if m:
+            scheduled_date = m.group(1)
 
-    # Preserve due date if not explicitly provided
     if due_date is None:
-        due_match = re.search(r'[📅📆]\s*(\d{4}-\d{2}-\d{2})', old_desc)
-        if due_match:
-            due_date = due_match.group(1)
+        m = re.search(r'[📅📆]\s*(\d{4}-\d{2}-\d{2})', old_desc)
+        if m:
+            due_date = m.group(1)
 
-    # Preserve priority if not explicitly provided
     if priority is None:
-        priority_matches = re.findall(r'[⏫🔼🔽⏬]', old_desc)
-        if priority_matches:
-            priority = priority_matches[-1]
+        pm = re.findall(r'[⏫🔼🔽⏬🔺]', old_desc)
+        if pm:
+            priority = pm[-1]
 
-    # Preserve recurrence (🔁 ...) - append to new description since no flag exists
-    recurrence_match = re.search(r'(🔁[^⏳📅📆🛫✅⏫🔼🔽⏬]*)', old_desc)
-    if recurrence_match:
-        recurrence_str = recurrence_match.group(1).strip()
-        # Only add if not already in new description
-        if '🔁' not in new_description:
-            new_description = f"{new_description} {recurrence_str}"
+    # Preserve recurrence
+    rm = re.search(r'(🔁[^⏳📅📆🛫✅⏫🔼🔽⏬🔺]*)', old_desc)
+    if rm and '🔁' not in new_description:
+        new_description = f"{new_description} {rm.group(1).strip()}"
 
-    # Add metadata if provided
     final_description = add_metadata_to_task(
         new_description,
         context=context,
         scheduled_date=scheduled_date,
         due_date=due_date,
-        priority=priority
+        priority=priority,
     )
 
     print(f"Final:   {final_description}")
 
-    # Confirm
     if not auto_confirm:
         response = input("\nProceed with edit? (yes/no): ")
-        if response.lower() not in ['yes', 'y']:
+        if response.lower() not in ('yes', 'y'):
             print("Cancelled.")
             return False
 
-    # Create backup
-    if create_backups:
-        create_backup(file_path)
-
-    # Update task
+    # Write back (line-level edit)
     task_match = re.match(r'^(\s*- \[(.)\]\s+)(.*)$', task_line)
     if task_match:
-        prefix, status, old_desc = task_match.groups()
+        prefix = task_match.group(1)
         lines[line_num - 1] = f"{prefix}{final_description}\n"
 
-        # Write back
-        try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.writelines(lines)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
 
-            print(f"\n✓ Task updated in {file_path.relative_to(vault_path)}:{line_num}")
-            if create_backups:
-                print("  Backup created with .bak extension")
-            return True
-
-        except Exception as e:
-            print(f"Error writing file: {e}")
-            return False
+        print(f"\n✓ Task updated in {file_rel}:{line_num}")
+        return True
 
     return False
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Edit a task's description at a specific file and line",
+        description="Edit a task's description",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Change task description
   python tools/edit_task.py --file GTD/Dashboard.md --line 42 --description "New description"
-
-  # Change description and add context
-  python tools/edit_task.py --file Daily/2025-12-29.md --line 27 --description "Discuss instax with partner" --context "@partner"
-
-  # Change description and add due date
-  python tools/edit_task.py --file Daily/2025-12-29.md --line 29 --description "Buy instax camera" --due tomorrow --context "@out"
-
-  # Change description by matching task text
-  python tools/edit_task.py --file Daily/2025-12-29.md --match "Buy instax camera @out" --description "Buy instax camera" --context "@out"
-
-  # Add priority
+  python tools/edit_task.py --file Daily/2025-12-29.md --match "Buy instax" --description "Buy instax camera" --context "@out"
   python tools/edit_task.py --file Daily/2025-12-25.md --line 34 --description "Best albums" --priority "⏬"
 
-Date formats:
-  - today, tomorrow, +N (days), YYYY-MM-DD
-
-Priority symbols:
-  - ⏫ highest, 🔼 high, 🔽 low, ⏬ lowest
+Date formats: today, tomorrow, +N (days), YYYY-MM-DD
+Priority symbols: ⏫ highest, 🔼 high, 🔽 low, ⏬ lowest
         """
     )
 
     parser.add_argument("--file", "-f", required=True, metavar="PATH",
-                       help="File containing task (relative to vault)")
+                        help="File containing task (relative to vault)")
     line_group = parser.add_mutually_exclusive_group(required=True)
     line_group.add_argument("--line", "-l", type=int, metavar="N",
-                           help="Line number of task (1-indexed)")
+                            help="Line number of task (1-indexed)")
     line_group.add_argument("--match", metavar="TEXT",
-                           help="Match exact task description (use --match-regex for patterns)")
+                            help="Match task description")
     parser.add_argument("--match-regex", action="store_true",
-                       help="Treat --match as regex")
+                        help="Treat --match as regex")
     parser.add_argument("--occurrence", type=int, default=1, metavar="N",
-                       help="Match occurrence to use when multiple tasks match (default: 1)")
+                        help="Which match occurrence (default: 1)")
     parser.add_argument("--description", "-d", required=True, metavar="TEXT",
-                       help="New task description")
+                        help="New task description")
     parser.add_argument("--context", "-c", metavar="TAG",
-                       help="Context tag to add (e.g., @pc, @work)")
+                        help="Context tag to add")
     parser.add_argument("--scheduled", "-s", metavar="DATE",
-                       help="Scheduled date (today, tomorrow, +N, YYYY-MM-DD)")
+                        help="Scheduled date")
     parser.add_argument("--due", metavar="DATE",
-                       help="Due date (today, tomorrow, +N, YYYY-MM-DD)")
+                        help="Due date")
     parser.add_argument("--priority", "-p", metavar="SYMBOL",
-                       help="Priority symbol (⏫, 🔼, 🔽, ⏬)")
+                        help="Priority symbol")
     parser.add_argument("--yes", "-y", action="store_true",
-                       help="Auto-confirm without prompting (for agentic use)")
+                        help="Auto-confirm without prompting")
 
     args = parser.parse_args()
 
-    # Parse dates
-    scheduled_date = None
-    due_date = None
+    scheduled_date = parse_date_string(args.scheduled) if args.scheduled else None
+    due_date = parse_date_string(args.due) if args.due else None
 
-    if args.scheduled:
-        try:
-            scheduled_date = parse_date_string(args.scheduled)
-        except ValueError as e:
-            print(f"Error: {e}")
-            return
-
-    if args.due:
-        try:
-            due_date = parse_date_string(args.due)
-        except ValueError as e:
-            print(f"Error: {e}")
-            return
-
-    # Validate priority
     valid_priorities = ['⏫', '🔼', '🔽', '⏬']
     if args.priority and args.priority not in valid_priorities:
-        print(f"Error: Invalid priority symbol '{args.priority}'")
-        print(f"Valid priorities: {', '.join(valid_priorities)}")
+        print(f"Error: Invalid priority '{args.priority}'. Valid: {', '.join(valid_priorities)}")
         return
 
-    # Get vault path and construct file path
-    vault_path = get_vault_path()
-    file_path = vault_path / args.file
-
-    if not file_path.exists():
-        print(f"Error: File not found: {args.file}")
-        return
-
-    # Edit the task
     edit_task(
-        file_path,
+        args.file,
         args.line if args.match is None else None,
         args.description,
         context=args.context,
         scheduled_date=scheduled_date,
         due_date=due_date,
         priority=args.priority,
-        create_backups=False,  # Disabled - rely on git
         auto_confirm=args.yes,
         match_text=args.match,
         match_regex=args.match_regex,
-        occurrence=args.occurrence
+        occurrence=args.occurrence,
     )
 
 
