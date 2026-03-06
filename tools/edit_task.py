@@ -119,6 +119,35 @@ def edit_task(file_path, line_num, new_description, context=None, scheduled_date
     print(f"Current: {task['description']}")
     print(f"New:     {new_description}")
 
+    # Preserve existing metadata from old task unless explicitly overridden
+    old_desc = task['description']
+
+    # Preserve scheduled date if not explicitly provided
+    if scheduled_date is None:
+        sched_match = re.search(r'⏳\s*(\d{4}-\d{2}-\d{2})', old_desc)
+        if sched_match:
+            scheduled_date = sched_match.group(1)
+
+    # Preserve due date if not explicitly provided
+    if due_date is None:
+        due_match = re.search(r'[📅📆]\s*(\d{4}-\d{2}-\d{2})', old_desc)
+        if due_match:
+            due_date = due_match.group(1)
+
+    # Preserve priority if not explicitly provided
+    if priority is None:
+        priority_matches = re.findall(r'[⏫🔼🔽⏬]', old_desc)
+        if priority_matches:
+            priority = priority_matches[-1]
+
+    # Preserve recurrence (🔁 ...) - append to new description since no flag exists
+    recurrence_match = re.search(r'(🔁[^⏳📅📆🛫✅⏫🔼🔽⏬]*)', old_desc)
+    if recurrence_match:
+        recurrence_str = recurrence_match.group(1).strip()
+        # Only add if not already in new description
+        if '🔁' not in new_description:
+            new_description = f"{new_description} {recurrence_str}"
+
     # Add metadata if provided
     final_description = add_metadata_to_task(
         new_description,

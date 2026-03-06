@@ -389,25 +389,49 @@ def find_task_lines_by_match(lines, match_text, use_regex=False):
     """
     Find task line numbers matching a description string or regex.
 
+    Matching strategy (non-regex):
+    1. Try exact match first.
+    2. If no exact match, try substring (case-sensitive) match.
+    3. If still none, try case-insensitive substring match.
+
     Args:
         lines (list[str]): File lines
-        match_text (str): Exact description to match (or regex pattern)
+        match_text (str): Description to match (or regex pattern)
         use_regex (bool): Treat match_text as regex when True
 
     Returns:
         list[int]: Matching 1-indexed line numbers
     """
-    matches = []
+    if use_regex:
+        matches = []
+        for line_num, line in enumerate(lines, 1):
+            task = parse_task_line(line, line_num)
+            if not task:
+                continue
+            if re.search(match_text, task['description']):
+                matches.append(line_num)
+        return matches
+
+    # Strategy 1: exact match
+    exact = []
+    # Strategy 2: substring match (case-sensitive)
+    substring = []
+    # Strategy 3: substring match (case-insensitive)
+    substring_ci = []
+
+    match_lower = match_text.lower()
+
     for line_num, line in enumerate(lines, 1):
         task = parse_task_line(line, line_num)
         if not task:
             continue
+        desc = task['description']
+        if desc == match_text:
+            exact.append(line_num)
+        if match_text in desc:
+            substring.append(line_num)
+        if match_lower in desc.lower():
+            substring_ci.append(line_num)
 
-        if use_regex:
-            if re.search(match_text, task['description']):
-                matches.append(line_num)
-        else:
-            if task['description'] == match_text:
-                matches.append(line_num)
-
-    return matches
+    # Return the most specific non-empty match set
+    return exact or substring or substring_ci
