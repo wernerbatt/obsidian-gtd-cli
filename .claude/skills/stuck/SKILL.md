@@ -84,16 +84,8 @@ Use during reviews or when multiple tasks are chronically stuck. Structured 4-st
 
 Surface what's being avoided and why.
 
-1. Pull the task list:
-   ```bash
-   cd /path/to/obsidian-gtd-cli
-   python tools/find_tasks.py --mode inbox --show-details
-   ```
-   Scan for repeatedly-deferred tasks (scheduled date in the past, rescheduled multiple times):
-   ```bash
-   VAULT_PATH=$(python3 -c "import yaml; print(yaml.safe_load(open('config.yaml'))['vault_path'])")
-   grep -rn "⏳" "$VAULT_PATH/GTD/" --include="*.md" | grep "$(date -d '-7 days' +%Y-%m-%d)\|$(date -d '-14 days' +%Y-%m-%d)"
-   ```
+1. Pull the task list using the `/obsidian` skill's Dataview eval queries (inbox, overdue).
+   Scan for repeatedly-deferred tasks (scheduled date in the past, rescheduled multiple times) using the overdue tasks query.
 
 2. Ask: *"Which of these feel heavy right now? What comes to mind when you think about starting them?"*
 
@@ -115,8 +107,8 @@ Pre-decide everything so there are zero decisions at go-time:
 | **How long minimum** | "15 minutes, then you can stop" |
 
 Agent moves:
-- Schedule with a concrete date via `edit_task.py --scheduled`
-- Create the file/scaffold/outline so the blank page is already gone
+- Schedule with a concrete date via the `/obsidian` skill's edit-by-match pattern (add `⏳ YYYY-MM-DD`)
+- Create the file/scaffold/outline so the blank page is already gone (use `create path=...`)
 - Add a time-block to daily note or calendar (via gccli skill)
 
 #### Step 3 — Certainty Builder
@@ -138,31 +130,23 @@ Make starting easier than avoiding:
 - The agent itself becomes the environment — one prompt and the user is inside the work
 - Suggest phone-away if distraction is mentioned
 
+Use the `/obsidian` skill to read the project file and related references in one go (see `/obsidian` skill for CLI setup):
 ```bash
-cd /path/to/obsidian-gtd-cli
-VAULT_PATH=$(python3 -c "import yaml; print(yaml.safe_load(open('config.yaml'))['vault_path'])")
-cat "$VAULT_PATH/GTD/Projects/Presentation.md"
+$OBS vault=$VAULT read path="GTD/Projects/Presentation.md"
 ```
 
 ## GTD Integration
 
-### Tools
+### Vault Operations
 
-```bash
-cd /path/to/obsidian-gtd-cli
+**Use the `/obsidian` skill for all vault reads and writes.** Load it before running any commands:
+→ `.claude/skills/obsidian/SKILL.md`
 
-# Rewrite a vague task into a concrete next action
-python tools/edit_task.py --file "Daily/2026-02-22.md" --match "Work on presentation" --description "Open slides.pptx and write the title slide" --context "@quick" --yes
-
-# Add a new micro-action to today's daily note
-python tools/add_task.py --today --task "Open Allotment Proposal.md and list 5 crops" --context "@quick" --yes
-
-# Promote to project if it's actually multi-step
-python tools/create_project.py "Kitchen Renovation" --next-action "Get 3 quotes from contractors @quick"
-
-# Schedule the first action
-python tools/edit_task.py --file "Daily/2026-02-22.md" --match "Open slides" --scheduled tomorrow --yes
-```
+Key operations for unblocking:
+- **Rewrite a vague task:** edit-by-match pattern to replace description + add context
+- **Add a micro-action to daily note:** `daily:path` + `append`
+- **Promote to project:** `create path="GTD/Projects/Name.md" content="..."`
+- **Schedule the first action:** edit-by-match to add `⏳ YYYY-MM-DD`
 
 ### Context Tag Hints
 

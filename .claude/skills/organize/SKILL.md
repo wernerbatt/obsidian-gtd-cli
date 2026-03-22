@@ -7,25 +7,16 @@ description: Organize tasks by contexts and projects
 
 Help organize tasks into contexts and projects for effective action.
 
-## Quick Start
+## Vault Operations
 
-Add context tags to tasks:
-```bash
-cd /path/to/obsidian-gtd-cli
-python tools/add_context.py --context "@deep" --search "research"
-```
+**Use the `/obsidian` skill for all vault reads and writes.** Load it before running any commands:
+→ `.claude/skills/obsidian/SKILL.md`
 
-Create a new project:
-```bash
-cd /path/to/obsidian-gtd-cli
-python tools/create_project.py "Website Redesign"
-```
-
-Move a task between files:
-```bash
-cd /path/to/obsidian-gtd-cli
-python tools/move_task.py --source GTD/Dashboard.md --line 42 --dest GTD/PC.md
-```
+Quick reference:
+- **Add context tags:** Use edit-by-match to rewrite task line with context tag
+- **Create a project:** Use `create path=...` to scaffold project file
+- **Move a task:** Use eval move pattern (delete from source + append to dest)
+- **Search tasks by context:** Use Dataview eval tag query
 
 ## Context Organization
 
@@ -45,7 +36,7 @@ Tasks are organized by context - the location, tool, or person needed to complet
 **Other Contexts:**
 - **@work** - Work environment/time
 - **@home** - Home environment
-- **@partner** - Requires partner
+- **@partner** - Requires partner/collaborator
 - **@out** - Errands/outside home
 - **@garden** - Garden work
 - **@ai** - AI-related tasks
@@ -56,69 +47,18 @@ Tasks are organized by context - the location, tool, or person needed to complet
 
 Each context has a corresponding file in the GTD folder (e.g., GTD/PC - Deep Focus.md, GTD/Work.md).
 
-## Tool: add_context.py
+## Batch Context Tagging
 
-Batch add context tags and scheduled dates to tasks based on search criteria.
+To add context tags to multiple tasks matching a search term, use the `/obsidian` skill's Dataview query to find matching tasks, then edit each with the edit-by-match eval pattern. Present changes to the user before executing.
 
-### Basic Usage
+## Creating Projects
 
-```bash
-# Add @deep to all tasks containing "research"
-python tools/add_context.py --context "@deep" --search "research"
-
-# Add @work to all tasks in specific file
-python tools/add_context.py --context "@work" --file GTD/Dashboard.md
-
-# Add context and schedule for next week
-python tools/add_context.py --context "@home" --search "clean" --scheduled +7
-
-# Preview changes without applying
-python tools/add_context.py --context "@pc" --search "code" --dry-run
-```
-
-### Scheduled Date Formats
-
-When using `--scheduled`, you can specify:
-- `today` - Today's date
-- `tomorrow` - Tomorrow's date
-- `+N` - N days from now (e.g., `+3` for 3 days, `+7` for one week)
-- `YYYY-MM-DD` - Specific date (e.g., `2026-01-15`)
-
-### Options
-
-- `--context TAG` or `-c TAG` - Context tag to add (e.g., @deep, @work)
-- `--search TERM` or `-s TERM` - Search term to match in descriptions
-- `--file PATH` or `-f PATH` - File to search (relative to vault)
-- `--scheduled DATE` - Scheduled date to add
-- `--dry-run` or `-n` - Preview changes without applying
-
-## Tool: create_project.py
-
-Create new project files for multi-step outcomes.
-
-A project in GTD is any outcome that requires more than one action step.
-
-### Basic Usage
-
-```bash
-# Create a simple project
-python tools/create_project.py "Website Redesign"
-
-# Create with default context for next actions
-python tools/create_project.py "Home Renovation" --context "@deep"
-
-# Use custom template
-python tools/create_project.py "Research AI Tools" --template my_template.md
-```
-
-### Project File Structure
-
-Projects are created in `GTD/Projects/` folder with this structure:
+Use the `/obsidian` skill's `create` command to scaffold project files in `GTD/Projects/`:
 
 ```markdown
 # Project Name
 
-**Created:** 2026-01-02
+**Created:** YYYY-MM-DD
 **Status:** Active
 
 ## Purpose / Outcome
@@ -137,92 +77,32 @@ What is the successful outcome for this project?
 ## Completed Actions
 ```
 
-### Options
+After creating the file, append a link to `GTD/Projects List.md`.
 
-- `name` (positional) - Project name
-- `--context TAG` or `-c TAG` - Default context tag for next actions
-- `--template FILE` or `-t FILE` - Custom template file (relative to vault)
+## Moving Tasks
 
-### Automatic Updates
-
-The tool automatically:
-- Creates the project file in `GTD/Projects/`
-- Adds the project to `Projects List.md`
-- Provides next steps for completing the project setup
-
-## Tool: move_task.py
-
-Move tasks between files while preserving metadata and subtasks.
-
-### Basic Usage
-
-```bash
-# Move task from Dashboard to PC context
-python tools/move_task.py --source GTD/Dashboard.md --line 42 --dest GTD/PC.md
-
-# Move task to project file
-python tools/move_task.py --source GTD/PC.md --line 10 --dest GTD/Projects/Website.md
-```
-
-### Features
-
-- Preserves all task metadata (emoji dates, context tags, etc.)
-- Moves subtasks (indented tasks) along with parent task
-- Confirms before making changes
-
-### Options
-
-- `--source FILE` or `-s FILE` - Source file (relative to vault)
-- `--line N` or `-l N` - Line number of task (1-indexed)
-- `--dest FILE` or `-d FILE` - Destination file (relative to vault)
+Use the `/obsidian` skill's move pattern (eval: delete from source + append to dest). This preserves all task metadata (emoji dates, context tags, etc.).
 
 ## Workflow Examples
 
 ### Example 1: Organize Research Tasks
 
-You have several research tasks scattered across files and want to organize them:
-
-```bash
-# Find all research tasks and add @deep context
-python tools/add_context.py --context "@deep" --search "research"
-
-# Schedule them for next week
-python tools/add_context.py --search "research @deep" --scheduled +7
-```
+Find research tasks via Dataview eval tag query, then batch-edit to add @deep and schedule:
+1. Query tasks containing "research" without a context tag
+2. Present list to user for confirmation
+3. Edit each via edit-by-match pattern, adding `@deep ⏳ YYYY-MM-DD`
 
 ### Example 2: Create Project for Multi-Step Outcome
 
-You realize "Website Redesign" is a project, not a simple task:
+1. Create project file via `create path="GTD/Projects/Website Redesign.md" content="..."`
+2. Append link to `GTD/Projects List.md`
+3. Move related tasks via eval move pattern (sequentially if same source file)
 
-```bash
-# Create project file
-python tools/create_project.py "Website Redesign" --context "@deep"
+### Example 3: Batch Schedule Weekend Tasks
 
-# Move related tasks to project file
-python tools/move_task.py --source GTD/PC.md --line 15 --dest "GTD/Projects/Website Redesign.md"
-python tools/move_task.py --source GTD/PC.md --line 23 --dest "GTD/Projects/Website Redesign.md"
-```
-
-### Example 3: Reorganize Context Lists
-
-You want to move completed @home tasks to an archive:
-
-```bash
-# Manually identify completed tasks and move them
-python tools/move_task.py --source GTD/Home.md --line 42 --dest Archive/2026-01.md
-```
-
-### Example 4: Batch Schedule Weekend Tasks
-
-Schedule all @home tasks for the weekend:
-
-```bash
-# Schedule for Saturday (5 days from now)
-python tools/add_context.py --file GTD/Home.md --scheduled +5
-
-# Preview first with --dry-run
-python tools/add_context.py --file GTD/Home.md --scheduled +5 --dry-run
-```
+1. Query tasks by context tag via Dataview eval
+2. Present list and get confirmation
+3. Edit each to add `⏳ YYYY-MM-DD` for the target date
 
 ## Best Practices
 
@@ -247,13 +127,13 @@ The Dashboard.md queries automatically filter tasks by context tag, so organized
 
 ## Tips
 
-- Use `add_context.py --dry-run` to preview changes before applying
+- Always present changes to the user before executing batch edits
 - Project names can include spaces and special characters
-- The `move_task.py` tool confirms before moving to prevent accidents
 - All file modifications are tracked via git - commit regularly to preserve history
 
-## Related Tools
+## Related Skills
 
-- `find_tasks.py --mode inbox` - Find tasks needing context tags
-- `process_item.py` - Interactive processing with context assignment
-- `weekly_review.py` - Review all contexts and projects
+- `/obsidian` — All vault read/write operations
+- `/clarify` — Processing inbox items
+- `/project` — Full project lifecycle
+- `/review` — Weekly review workflow

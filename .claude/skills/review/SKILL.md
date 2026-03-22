@@ -7,19 +7,18 @@ description: Conduct weekly GTD review
 
 Facilitate the weekly review process to keep your GTD system current and maintain perspective.
 
-## Quick Start
+## Vault Operations
 
-Generate weekly review report:
-```bash
-cd /path/to/obsidian-gtd-cli
-python tools/weekly_review.py
-```
+**Use the `/obsidian` skill for all vault reads and writes.** Load it before running any commands:
+→ `.claude/skills/obsidian/SKILL.md`
 
-Save review to file:
-```bash
-cd /path/to/obsidian-gtd-cli
-python tools/weekly_review.py --output "Weekly Review 2026-01-02.md"
-```
+Key queries for the review:
+- **Inbox count:** Dataview eval inbox query → `.length`
+- **Context distribution:** Dataview eval context-counts query
+- **Overdue tasks:** Dataview eval overdue query
+- **Stale projects:** Dataview eval stale-projects query
+- **Completed this week:** Dataview eval completed-tasks query (last 7 days)
+- **Someday/maybe:** Dataview eval someday query
 
 ## The Weekly Review
 
@@ -32,33 +31,15 @@ The weekly review is the most critical GTD practice. It's your opportunity to:
 
 Before starting, check for the most recent weekly review summary:
 ```bash
-ls -t /path/to/vault/GTD/Weekly\ Review\ *Summary.md | head -1
+# Read vault_path from config.yaml
+VAULT_PATH=$(python3 -c "import yaml; print(yaml.safe_load(open('config.yaml'))['vault_path'])")
+ls -t "$VAULT_PATH/GTD/Weekly Review "*Summary.md | head -1
 ```
 Read it and surface any "Still On The Radar" items from last time. These become the first things to check in the current review — were they addressed, or do they carry forward?
 
-## Tool: weekly_review.py
+## Review Report
 
-Generate comprehensive weekly review reports with metrics and checklists.
-
-### Basic Usage
-
-```bash
-# Display review to terminal
-python tools/weekly_review.py
-
-# Save review to file in vault
-python tools/weekly_review.py --output "Weekly Review 2026-01-02.md"
-
-# Show only projects without next actions
-python tools/weekly_review.py --stale-projects
-
-# Open review in Obsidian after generation
-python tools/weekly_review.py --output review.md --open
-```
-
-### Report Sections
-
-The weekly review report includes:
+Generate the review report by running the `/obsidian` skill queries and assembling the results. The report includes:
 
 #### 1. Get Clear
 - **Inbox count** - How many items need processing
@@ -85,13 +66,13 @@ The weekly review report includes:
 - Future commitments
 
 **Live Calendar Data (gccli):**
-When running the review interactively, pull real calendar events using gccli:
+When running the review interactively, read the `calendars` section from `config.yaml` to get the account email and calendar IDs, then pull real calendar events:
 ```bash
-# Past week
-gccli user@example.com events primary --from YYYY-MM-DDTHH:MM:SSZ --to YYYY-MM-DDTHH:MM:SSZ
-# Also check Secondary Calendar and partner's calendar:
-gccli user@example.com events secondary-calendar-id@group.calendar.google.com --from ... --to ...
-gccli user@example.com events partner@example.com --from ... --to ...
+# Primary calendar — past week
+gccli <account> events primary --from YYYY-MM-DDTHH:MM:SSZ --to YYYY-MM-DDTHH:MM:SSZ
+
+# Additional calendars (loop through calendars.additional in config)
+gccli <account> events <calendar-id> --from ... --to ...
 ```
 Note: Date format must be `YYYY-MM-DDTHH:MM:SSZ` (UTC with Z suffix). Plain `YYYY-MM-DD` returns Bad Request.
 
@@ -108,17 +89,11 @@ Note: Date format must be `YYYY-MM-DDTHH:MM:SSZ` (UTC with Z suffix). Plain `YYY
 - Tasks completed in the last 7 days
 - Shows your accomplishments
 
-### Options
-
-- `--output FILE` or `-o FILE` - Save report to file (relative to vault)
-- `--stale-projects` - Show only projects without next actions
-- `--open` - Open file in Obsidian after generation (requires --output)
+To save the review report, use the `/obsidian` skill's `create` command to write to `GTD/Weekly Review YYYY-MM-DD Summary.md`.
 
 ## Weekly Review Checklist
 
 Located at: `GTD/Checklists/Weekly Review Checklist.md`
-
-The tool complements your existing weekly review checklist by providing metrics and identifying issues.
 
 ## Review Frequency
 
@@ -135,21 +110,14 @@ The tool complements your existing weekly review checklist by providing metrics 
 
 During the review, verify that the daily overdue script ran recently:
 ```bash
-cd /path/to/vault && git log --oneline -3
+VAULT_PATH=$(python3 -c "import yaml; print(yaml.safe_load(open('config.yaml'))['vault_path'])")
+cd "$VAULT_PATH" && git log --oneline -3
 ```
-Look for "Automated task update" commits. If the last one is >2 days old, the scheduled task (`Run daily scripts` in Windows Task Scheduler) may be broken. The script lives at `scripts/overdue.py` and is called by `scripts/run_daily_scripts.bat`.
+Look for "Automated task update" commits. If the last one is >2 days old, the scheduled task for daily scripts may need attention.
 
 ## Context & Priority Distribution
 
-As part of Get Current, generate context and priority distribution counts for all active (non-⏬) tasks:
-```bash
-# Context distribution
-cd /path/to/vault && grep -rn "^- \[ \]" --include="*.md" | grep -v "⏬" | grep -v "Templates/" | grep -v "Checklists/" | grep -v "\.obsidian" | sed -n 's/.*\(@[a-z]*\).*/\1/p' | sort | uniq -c | sort -rn
-
-# Priority distribution
-grep -rn "^- \[ \]" --include="*.md" | grep -v "⏬" | grep -v "Templates/" | grep -v "Checklists/" | grep -v "\.obsidian" | grep -oP '[🔺⏫🔼🔽]' | sort | uniq -c | sort -rn
-```
-Track these week-over-week to spot trends (growing lists, priority inflation, etc.).
+As part of Get Current, use the `/obsidian` skill's **context distribution** Dataview eval query to generate counts for all active (non-⏬) tasks by context tag. Track these week-over-week to spot trends (growing lists, priority inflation, etc.).
 
 ## Weekly Review Summary File
 
@@ -165,8 +133,7 @@ At the end of the review, save a summary to `GTD/Weekly Review YYYY-MM-DD Summar
 ### High Inbox Count
 If you have many items to process:
 - Block time for processing
-- Use `find_inbox.py` to see what needs attention
-- Use `process_item.py` for interactive processing
+- Use the `/clarify` skill to process inbox items
 
 ### Many Overdue Tasks
 If tasks are consistently overdue:
@@ -187,27 +154,14 @@ If context lists are overwhelming:
 - Consider if you're over-committed
 - Focus on highest-impact items
 
-## Integration with Other Tools
+## Integration with Other Skills
 
-The weekly review works best combined with other tools:
-
-```bash
-# 1. Start with weekly review to see overview
-python tools/weekly_review.py
-
-# 2. Process inbox to zero
-python tools/find_tasks.py --mode inbox
-python tools/process_item.py --file GTD/Dashboard.md --line 42
-
-# 3. Review overdue tasks
-python tools/add_context.py --search "overdue" --scheduled tomorrow
-
-# 4. Update stale projects
-python tools/create_project.py "New Project" --context "@pc"
-
-# 5. Generate final review report
-python tools/weekly_review.py --output "Weekly Review 2026-01-02.md"
-```
+The weekly review works best combined with:
+1. `/obsidian` — All vault queries and edits
+2. `/clarify` — Process inbox to zero
+3. `/organize` — Retag and reschedule tasks
+4. `/project` — Fix stale projects, create new ones
+5. `/purge` — Cull bloated context lists
 
 ## Best Practices
 
@@ -236,7 +190,7 @@ Track these over time to identify patterns and improve your system.
 [Friday 5:00 PM - Weekly Review]
 
 1. Run review report:
-   $ python tools/weekly_review.py --output "Review-2026-01-02.md"
+   [Run /obsidian skill queries for inbox, overdue, stale, completed]
 
    Output:
    - Inbox: 12 items
@@ -246,8 +200,7 @@ Track these over time to identify patterns and improve your system.
    - Completed: 23 tasks
 
 2. Process inbox to zero:
-   $ python tools/find_inbox.py
-   $ python tools/process_item.py --file GTD/Dashboard.md --line 42
+   [Use /clarify skill]
    [Process all 12 items...]
 
 3. Address overdue tasks:
@@ -267,7 +220,7 @@ Track these over time to identify patterns and improve your system.
    [Found 2 items to activate, added to @ai list]
 
 7. Final check:
-   $ python tools/weekly_review.py
+   [Re-run /obsidian queries]
 
    Output:
    - Inbox: 0 items ✓
@@ -292,7 +245,7 @@ Result: Clean, current, trusted system!
 
 **Can't reach inbox zero:**
 - Block dedicated processing time
-- Use `process_item.py` for efficiency
+- Use the `/clarify` skill for efficient processing
 - Be ruthless with trash/someday decisions
 
 **Projects always stale:**
@@ -305,12 +258,13 @@ Result: Clean, current, trusted system!
 - Move nice-to-haves to Someday/Maybe
 - Accept you can't do everything
 
-## Related Tools
+## Related Skills
 
-- `find_inbox.py` - Find items to process
-- `process_item.py` - Interactive processing
-- `add_context.py` - Batch update tasks
-- `create_project.py` - Create new projects
+- `/obsidian` — All vault read/write operations
+- `/clarify` — Inbox processing
+- `/organize` — Context tagging and project creation
+- `/project` — Project lifecycle management
+- `/purge` — List reduction
 
 ## Resources
 

@@ -191,6 +191,7 @@ def generate_review_report():
 ### Calendar Review
 
 - [ ] Review past week (what happened?)
+- [ ] Check phone screen time for the past week and think about what I want to reduce
 - [ ] Review upcoming week (what's coming?)
 - [ ] Review next month (future commitments)
 

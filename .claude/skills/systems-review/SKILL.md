@@ -17,16 +17,16 @@ This is a **conversational** skill. Walk through each system one at a time with 
 
 ### Step 1 — Load the specs
 
-Read the current state of all system specs:
+Read the current state of all system specs using the `/obsidian` skill:
 
 ```bash
-VAULT_PATH="/path/to/vault"
-cat "${VAULT_PATH}/References/Systems.md"
-cat "${VAULT_PATH}/References/GTD System.md"
-cat "${VAULT_PATH}/References/Atomic System.md"
-cat "${VAULT_PATH}/References/PQ System.md"
-cat "${VAULT_PATH}/References/Friction Elimination.md"
-cat "${VAULT_PATH}/References/Intuitive Eating System.md"
+# See /obsidian skill for $OBS and $VAULT setup
+$OBS vault=$VAULT read path="References/Systems.md"
+$OBS vault=$VAULT read path="References/GTD System.md"
+$OBS vault=$VAULT read path="References/Atomic System.md"
+$OBS vault=$VAULT read path="References/PQ System.md"
+$OBS vault=$VAULT read path="References/Friction Elimination.md"
+$OBS vault=$VAULT read path="References/Intuitive Eating System.md"
 ```
 
 ### Step 2 — Walk through each system
@@ -42,11 +42,7 @@ Keep it conversational. Don't interrogate — just ask one question at a time an
 
 #### System order
 
-1. **GTD** — Start here. Check metrics using the review tool:
-   ```bash
-   cd /path/to/obsidian-gtd-cli
-   python tools/weekly_review.py
-   ```
+1. **GTD** — Start here. Check metrics using the `/obsidian` skill's Dataview queries (inbox count, overdue, stale projects, context distribution, completed this week).
    Key questions: inbox at zero? Projects moving? Any stale? Overdue tasks?
 
 2. **Atomic** — Morning and evening routines.

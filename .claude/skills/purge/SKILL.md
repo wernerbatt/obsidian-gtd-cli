@@ -15,28 +15,18 @@ Systematically reduce task list bloat by walking through every active task and f
 - You notice tasks that have been sitting untouched for weeks
 - Total active tasks exceed what you can realistically engage with
 
-## Quick Start
+## Vault Operations
 
-```bash
-cd /path/to/obsidian-gtd-cli
+**Use the `/obsidian` skill for all vault reads and writes.** Load it before running any commands:
+→ `.claude/skills/obsidian/SKILL.md`
 
-# See the full picture first
-python3 tools/weekly_review.py
-
-# Find unprocessed inbox tasks
-python3 tools/find_tasks.py --query inbox --verbose
-
-# Scan a specific context
-python3 tools/find_tasks.py --query tag --tag @quick --verbose
-
-# See all open tasks
-python3 tools/find_tasks.py --query all --verbose
-
-# See someday/maybe backlog
-python3 tools/find_tasks.py --query someday --verbose
-```
-
-Then ask the agent to run a purge session (see Workflow below).
+Key queries for purge:
+- **Inbox:** Dataview eval inbox query
+- **By context:** Dataview eval tag query (e.g. `@quick`, `@deep`)
+- **All open tasks:** `tasks todo verbose format=json`
+- **Someday/maybe:** Dataview eval someday query
+- **Context distribution:** Dataview eval context-counts query
+- **Stale projects:** Dataview eval stale-projects query
 
 ## Core Principles (GTD-Aligned)
 
@@ -78,13 +68,7 @@ When scanning, always filter out:
 - Tasks in Templates, Checklists folders
 - **Tasks with a scheduled date (⏳) don't need a context tag** — they will surface when the date arrives. Skip them in orphan/no-context triage.
 
-```bash
-# The agent will use these tools during triage:
-python3 tools/find_tasks.py --query inbox --verbose
-python3 tools/find_tasks.py --query someday --verbose
-python3 tools/find_tasks.py --query tag --tag @quick --verbose   # per-context scan
-python3 tools/find_tasks.py --query all --verbose                # everything open
-```
+Use the `/obsidian` skill's Dataview eval queries for inbox, someday, tag, and all-tasks scans.
 
 ### Phase 2: Context-by-Context Purge
 
@@ -110,7 +94,7 @@ Work through each context list one at a time. For each context, present all acti
 
 When demoting, **move one step down by default** — not straight to ⏬. For example: 🔼 → normal, normal → 🔽. Only demote to ⏬ if the user explicitly asks to send something to Someday/Maybe.
 
-Note: `edit_task.py` cannot remove a priority (only set one). To demote from 🔼/⏫/🔺 to normal, edit the file directly to strip the priority emoji.
+Note: To demote from 🔼/⏫/🔺 to normal, use the `/obsidian` skill's edit-by-match pattern and rewrite the line without the priority emoji.
 
 **Context processing order** (heaviest lists first):
 1. Orphaned daily note tasks (biggest source of bloat)
@@ -211,45 +195,23 @@ The agent should use these heuristics when suggesting actions:
 | Recurring task lost its 🔁 pattern | **fix** recurrence |
 | Placeholder/generic project task (e.g. "First next action") | **rewrite** to concrete action |
 
-## Tools Used
+## Operations
 
-All tools accept `--match` (exact) or `--match-regex` for fuzzy matching, plus `--yes` for agentic use.
-File paths are relative to the vault root.
+All operations use the `/obsidian` skill. File paths are vault-relative.
 
-```bash
-# SCAN — find tasks to triage (use find_tasks.py from obsidian-cli or obsidian-gtd-cli)
-python3 tools/find_tasks.py --query tag --tag @quick --verbose   # by context
-python3 tools/find_tasks.py --query all --verbose                # all open tasks
-python3 tools/find_tasks.py --query inbox --verbose              # unprocessed
-python3 tools/find_tasks.py --query someday --verbose            # ⏬ backlog
+| Action | `/obsidian` pattern |
+|--------|-------------------|
+| **Scan** | Dataview eval queries (inbox, tag, all, someday) |
+| **Drop** | eval delete-line pattern |
+| **Demote** | eval edit-by-match — rewrite line with `⏬` |
+| **Done** | `task path=... line=N done` (native) |
+| **Rewrite** | eval edit-by-match — new description + context |
+| **Reschedule** | eval edit-by-match — add/update `⏳ YYYY-MM-DD` |
+| **Move context** | eval edit-by-match — change `@tag` |
+| **Move to file** | eval move pattern (delete + append) |
+| **Create project** | `create path=... content=...` + append to Projects List |
 
-# DROP — delete task line entirely
-python3 tools/delete_task.py --file <path> --match "<desc>" --match-regex --yes
-
-# DEMOTE — add ⏬ priority (Someday/Maybe)
-python3 tools/edit_task.py --file <path> --match "<desc>" --match-regex --description "<desc>" --priority ⏬ --yes
-
-# DONE — mark task complete
-python3 tools/mark_done.py --file <path> --match "<desc>" --match-regex --date today --yes
-
-# REWRITE — change description and/or context
-python3 tools/edit_task.py --file <path> --match "<desc>" --match-regex --description "New clear description" --context @deep --yes
-
-# RESCHEDULE — set or update ⏳ date
-python3 tools/edit_task.py --file <path> --match "<desc>" --match-regex --description "<desc>" --scheduled 2026-03-01 --yes
-
-# MOVE CONTEXT — change context tag
-python3 tools/edit_task.py --file <path> --match "<desc>" --match-regex --description "<desc>" --context @batch --yes
-
-# MOVE TO FILE — relocate task between files
-python3 tools/move_task.py --source <path> --match "<desc>" --match-regex --dest "GTD/Projects/<Name>.md" --yes
-
-# CREATE PROJECT
-python3 tools/create_project.py "<Name>" --context @deep --yes
-```
-
-**Important:** Use the CLI tools for all modifications. Do not read files and edit them manually.
-The `find_tasks.py --query tag` output provides file paths and line numbers needed by the other tools.
+**Important:** Use the `/obsidian` skill for all modifications. Do not read files and edit them manually.
 
 ## Scope: What Gets Purged
 
@@ -316,7 +278,7 @@ Batch 1/3:
 6. "ready made proteïen @quick" (Jan 12)            → suggest: rewrite "Research ready-made protein options @quick"
 7. "change alarm sounds" (Jan 21)                   → suggest: keep (scheduled Feb 7)
 8. empty task "- [ ] " (Jan 24)                     → suggest: drop
-9. "Check on side-project" (Jan 25)               → suggest: keep (recurring)
+9. "Check on side project repo" (Jan 25)              → suggest: keep (recurring)
 10. "Pi Moon Mission Patch @quick" (Jan 25)         → suggest: keep or demote
 
 Accept all suggestions? Or type numbers to override:

@@ -7,36 +7,19 @@ description: Process inbox items using GTD workflow
 
 Help process unprocessed items in the Obsidian vault using GTD (Getting Things Done) methodology.
 
-## Quick Start
+## Vault Operations
 
-Find items to process:
-```bash
-cd /path/to/obsidian-gtd-cli
-python tools/find_tasks.py --mode inbox
-```
+**Use the `/obsidian` skill for all vault reads and writes.** Load it before running any commands:
+→ `.claude/skills/obsidian/SKILL.md`
 
-Add a task (to today's daily note or a specific file):
-```bash
-cd /path/to/obsidian-gtd-cli
-# Add to today's daily note
-python tools/add_task.py --today --task "Buy groceries" --context "@out" --yes
-
-# Add to a specific file
-python tools/add_task.py --file Daily/2026-01-17.md --task "Read article" --context "@read" --yes
-
-# Add under a specific heading
-python tools/add_task.py --file GTD/Dashboard.md --task "New idea" --heading "Notes" --yes
-
-# Add with scheduling and priority
-python tools/add_task.py --today --task "Call dentist" --context "@quick" --due tomorrow --yes
-python tools/add_task.py --today --task "Maybe read this" --priority "⏬" --yes
-```
-
-Process a specific task interactively:
-```bash
-cd /path/to/obsidian-gtd-cli
-python tools/process_item.py --file GTD/Dashboard.md --line 42
-```
+Quick reference (see `/obsidian` skill for full patterns):
+- **Find inbox items:** Dataview eval inbox query
+- **Add task to daily note:** `daily:path` + `append`
+- **Add task under heading:** eval + `vault.process()` insert-under-heading
+- **Edit task:** eval + `vault.process()` edit-by-match
+- **Move task:** eval + `vault.process()` (delete from source + append to dest)
+- **Mark done:** `task path=... line=N done`
+- **Delete task:** eval + `vault.process()` splice
 
 ### Open Today's Daily Note in Obsidian
 
@@ -47,17 +30,10 @@ cmd.exe /c start "" "obsidian://daily"
 ### Stable Targeting (Avoid Line-Shift Errors)
 
 When batch editing or moving tasks, prefer description matching over line numbers.
-**Known gotcha:** `--match` may fail on raw URLs or tasks with special characters. If `--match` returns "No matching tasks found", fall back to `--line N` targeting instead.
-```bash
-# Edit by exact description match
-python tools/edit_task.py --file Daily/2026-01-17.md --match "Buy compost bins" --context "@out" --yes
 
-# Move by exact description match (use --occurrence N if multiple match)
-python tools/move_task.py --source Daily/2026-01-17.md --match "Buy compost bins" --dest "GTD/Projects/Allotment.md" --yes
+### Avoid Parallel Edits to the Same File
 
-# Mark done by exact description match
-python tools/mark_done.py --file Daily/2026-01-17.md --match "message" --date 2026-01-18 --yes
-```
+**CRITICAL:** Never run parallel writes to the same file. `app.vault.process()` is atomic per call, but two concurrent evals on the same file will race. Sequence writes to the same file; different files can be parallel.
 
 ## IMPORTANT: Confirmation & Execution
 
@@ -82,32 +58,14 @@ Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) f
 
 ### 1. Find Inbox Items
 
-The "To Process" query finds tasks that need clarification:
-- No context tags (@pc, @work, @home, etc.)
+Use the `/obsidian` skill's **GTD Inbox** Dataview eval query. It finds tasks that need clarification:
+- No context tags (@deep, @quick, @batch, @read, @partner, @out, etc.)
 - Not scheduled or overdue
-- Not time blocks
 - Not in excluded folders (Checklists, Templates, Recurring)
 - Not blocked or done
 - Excludes `@someday` and lowest-priority (⏬) items
 
-```bash
-# Find all inbox items
-python tools/find_tasks.py --mode inbox
-
-# Show details (file paths, line numbers)
-python tools/find_tasks.py --mode inbox --show-details
-
-# Limit results
-python tools/find_tasks.py --mode inbox --limit 10
-
-# Export to file for batch processing
-python tools/find_tasks.py --mode inbox --export inbox.txt
-```
-
-To review someday/maybe items (legacy `@someday` or ⏬), use:
-```bash
-python tools/find_tasks.py --mode someday
-```
+For someday/maybe items, use the `/obsidian` skill's **Someday/maybe** query.
 
 ### 1.0 Batch Size Guidance
 
@@ -125,13 +83,16 @@ If the task contains a TikTok or Instagram URL, auto-assign `@batch` in the back
 
 #### TikTok Title Resolution
 
-When a task contains a bare TikTok URL (e.g., `https://vm.tiktok.com/...`), resolve it to a descriptive markdown link using the playwright-cli skill:
+When a task contains a bare TikTok URL (e.g., `https://vm.tiktok.com/...`), resolve it to a descriptive markdown link using curl with the `facebookexternalhit` user-agent (TikTok serves OG metadata to social crawlers):
 
 ```bash
-playwright-cli open "<tiktok-url>" --browser=chromium
-# Extract the page title (format: "<description> | TikTok")
-# Also check the snapshot YAML for the video description text
-playwright-cli close
+# 1. Resolve the short URL to get the canonical URL
+resolved=$(curl -sL -o /dev/null -w "%{url_effective}" "https://vm.tiktok.com/ZNRfjoYEP/")
+
+# 2. Fetch OG description from the resolved URL
+desc=$(curl -sL -H "User-Agent: facebookexternalhit/1.1" "$resolved" \
+  | grep -oP 'og:description.*?content="[^"]*"' \
+  | sed 's/.*content="//;s/"//')
 ```
 
 Then rewrite the task line from:
@@ -145,10 +106,10 @@ to:
 
 Guidelines for the title:
 - Write a short, natural, lowercase title (sentence case) summarising the video content
-- Derive it from the page title and/or the video description in the snapshot
-- Strip "| TikTok" suffix and any hashtags — just capture the gist
+- Derive it from the `og:description` content returned by curl
+- Strip like/comment counts, hashtags, and disclaimers — just capture the gist
 - Keep it concise (under ~80 chars)
-- Batch multiple TikTok URLs in a single browser session to save time (use `goto` instead of `open` for subsequent URLs)
+- Batch multiple TikTok URLs in a single loop to save time
 
 ### 1.2 Scheduling Shorthand
 
@@ -176,10 +137,7 @@ The GTD clarify workflow asks these questions for each task:
    - **Delegate**: Add @waiting tag + person
    - **Do ASAP**: Add context tag
 
-```bash
-# Process specific task
-python tools/process_item.py --file GTD/Dashboard.md --line 42
-```
+Use the `/obsidian` skill's edit-by-match, move, mark-done, and delete patterns to execute these actions.
 
 ## Context Tags
 
@@ -196,7 +154,7 @@ Tasks are organized by context (where/when/with whom/what focus can you do it):
 
 **Other Contexts:**
 - `@work` - Work context (retired — use @deep/@quick/@batch instead)
-- `@partner` - Requires partner
+- `@partner` - Requires partner/collaborator
 - `@out` - Errands/outside/garden
 - `@ai` - AI-related tasks
 - `@ponderables` - Things to think about
@@ -256,7 +214,7 @@ When scheduling, you can use:
 
 ## Tips
 
-- Use `find_inbox.py --limit 5` to process just a few items at a time
+- Use the `/obsidian` skill's inbox query with `.slice(0, 5)` to process just a few items at a time
 - Cancelled processing leaves tasks unchanged
 - Deleted tasks are removed from files
 - For someday/maybe items, add lowest priority (⏬) instead of using @someday context
@@ -288,74 +246,34 @@ Gmail clarify defaults:
 ## Example Session
 
 ```
-$ python tools/find_inbox.py --limit 3
-Found 3 task(s) to process:
+Agent: Found 3 inbox items:
 
 GTD/Dashboard.md:
-  - Buy groceries
-  - Research new framework
-  - Fix kitchen sink
+  1. Buy groceries
+  2. Research new framework
+  3. Fix kitchen sink
 
-$ python tools/process_item.py --file GTD/Dashboard.md --line 15
+Suggestions:
+  1.  Buy groceries → @out, schedule tomorrow
+  1.1 Rewrite: "Buy weekly groceries" @out ⏳ 2026-01-03
+  2.  Research new framework → @deep
+  2.1 Promote to project (multi-step)
+  3.  Fix kitchen sink → @partner (need to discuss)
+  3.1 Rewrite: "Discuss kitchen sink repair options" @partner
 
-============================================================
-File: GTD/Dashboard.md
-Line: 15
-Task: Buy groceries
-============================================================
+Accept all? Or override by number:
 
-1. What is it? (Clarify)
-   Briefly describe what this is about (or press enter to skip): Weekly grocery shopping
+User: accept
 
-2. Is it actionable?
-   Can you do something about this? (yes/no): yes
-
-3. What's the next action?
-   Describe the specific, concrete next action: Buy groceries for the week
-
-4. Can you do it in 2 minutes or less?
-   2-minute rule (yes/no): no
-
-5. Is this a project (requires multiple steps)?
-   Project? (yes/no): no
-
-6. Should you delegate or defer this?
-   1. Defer (schedule for later)
-   2. Delegate (assign to someone)
-   3. Do ASAP (no specific date)
-   Choice: 1
-
-Available contexts:
-  1. @pc
-  2. @work
-  3. @home
-  4. @partner
-  5. @out
-  6. @garden
-  7. @ai
-  8. @ponderables
-  9. @stuck
-
-Select context (number or name): 5
-
-When should you do this?
-  Options:
-    - today
-    - tomorrow
-    - +N (days from now, e.g., +3)
-    - YYYY-MM-DD (specific date)
-    - <enter> to skip
-
-Scheduled date: tomorrow
-
-✓ Task processed and updated in GTD/Dashboard.md:15
-   Context: @out
-   Scheduled: 2026-01-03
+Agent: [executes via /obsidian skill edit-by-match patterns]
+✓ 1: Rewritten + scheduled
+✓ 2: Tagged @deep
+✓ 3: Rewritten + tagged @partner
 ```
 
-## Related Tools
+## Related Skills
 
-- `add_task.py` - Add a new task to today's daily note or any file (supports `--today`, `--heading`, context, dates, priority)
-- `add_context.py` - Batch add context tags to multiple tasks
-- `create_project.py` - Create project files for multi-step outcomes
-- `weekly_review.py` - Review all contexts and projects
+- `/obsidian` — All vault read/write operations
+- `/organize` — Batch context tagging, project creation
+- `/project` — Multi-step outcome management
+- `/review` — Weekly review workflow

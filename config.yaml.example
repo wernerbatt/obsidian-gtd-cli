@@ -1,7 +1,15 @@
 # Obsidian GTD CLI Configuration
 
-# Path to your Obsidian vault (relative or absolute)
-vault_path: ../Obsidian
+# Path to the Obsidian CLI binary
+# Linux/Mac: typically $(which obsidian) or /usr/local/bin/obsidian
+# WSL:       /mnt/c/Users/<you>/AppData/Local/Programs/obsidian/Obsidian.exe
+obsidian_bin: /usr/local/bin/obsidian
+
+# Obsidian vault name (passed as vault= to CLI)
+vault_name: MyVault
+
+# Path to your Obsidian vault on disk (for git checks, etc.)
+vault_path: /path/to/your/obsidian/vault
 
 # GTD folder structure within vault
 gtd:
@@ -52,7 +60,7 @@ settings:
     - "@batch"     # Similar tasks to batch together
     # "@work" - retired
     # "@home" - retired, tasks reassigned to @quick/@partner/@out/@garden/@batch
-    - "@partner"
+    - "@partner"    # Requires your partner/collaborator
     - "@out"
     # "@garden" - retired, tasks reassigned to @out
     - "@ai"
@@ -61,3 +69,12 @@ settings:
     # "@pc" - retired, migrated to @deep/@quick/@batch/@read
 
   # Note: @someday context is deprecated. Use lowest priority (⏬) for someday/maybe items instead.
+
+# Google Calendar accounts (used by review skill + gccli)
+calendars:
+  account: user@example.com
+  additional:
+    - name: "Secondary Calendar"
+      id: <your-calendar-id>@group.calendar.google.com
+    - name: "Partner"
+      id: partner@example.com

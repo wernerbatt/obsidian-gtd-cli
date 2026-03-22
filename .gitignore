@@ -53,5 +53,8 @@ Thumbs.db
 test_*.py
 *_test.py
 
-# Personal config (uncomment if you want to keep vault path private)
-# config.yaml
+# Personal config (copy config.yaml.example to config.yaml and customise)
+config.yaml
+
+# Local tool settings
+.pi/
