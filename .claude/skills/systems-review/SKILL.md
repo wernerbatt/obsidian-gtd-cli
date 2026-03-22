@@ -15,6 +15,14 @@ The systems index lives at `References/Systems.md` in the vault. Each system has
 
 This is a **conversational** skill. Walk through each system one at a time with the user. Don't dump everything at once — ask questions, listen, and capture.
 
+### Conversation Rules
+
+- **One question at a time.** Never combine two questions in one message.
+- **Use concrete, low-friction questions.** Ask "Did X happen?" or "How many days did you do Y?" — not "What do you want to do more/less of?" If the user stalls or says "too much friction", rephrase with less abstraction.
+- **Capture notes proactively.** Don't wait for the user to remind you — take status notes after each system and show them before moving on.
+- **When the user mentions a concept they can't remember,** search the web before answering from memory.
+- **Keep it moving.** The review itself is a friction source. If a system is running well, one question is enough — don't force depth where there's nothing to discuss.
+
 ### Step 1 — Load the specs
 
 Read the current state of all system specs using the `/obsidian` skill:
@@ -52,7 +60,11 @@ Keep it conversational. Don't interrogate — just ask one question at a time an
    Key questions: did the 08:00/13:00/16:00 happen? Any saboteurs you noticed this week?
 
 4. **Friction Elimination** — Resistance mapping.
-   Key questions: what are you avoiding right now? Run the resistance map live if needed. Log any actions taken.
+   Key questions (use these concrete prompts):
+   - "Is there a task you keep seeing and skipping?"
+   - "Did anything break or get annoying this week?"
+   - "Did something just work this week without effort?"
+   Run the resistance map live if needed. Log any actions taken.
 
 5. **Intuitive Eating** — Weekly check-in.
    Key questions: use the prompts in the spec. How's the relationship with food? Diet mentality creeping in?
