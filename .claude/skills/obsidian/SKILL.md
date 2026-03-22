@@ -97,21 +97,29 @@ Use `eval` to access the Dataview plugin API for structured queries. Wrap in an 
 
 ### GTD Inbox (tasks needing processing)
 
+Matches the Dashboard "To Process" query: no context tag, not blocked, not future-scheduled, not lowest priority.
+
 ```bash
 $OBS vault=$VAULT eval 'code=
 (async () => {
   const dv = app.plugins.plugins["dataview"]?.api;
-  const contextRe = /@(deep|quick|batch|read|partner|out|ai|ponderables|stuck|waiting|pc|work|home|garden|someday)/;
+  const contextRe = /@(deep|quick|batch|read|partner|sharne|out|ai|ponderables|stuck|waiting|pc|work|home|garden|someday)/;
   const excludeFolders = ["Checklists", "Templates", "Recurring"];
+  const today = new Date().toISOString().slice(0,10);
   const inbox = dv.pages().file.tasks
     .where(t => !t.completed)
     .where(t => !contextRe.test(t.text))
     .where(t => !t.text.includes("⏬"))
-    .where(t => !t.scheduled)
-    .where(t => !excludeFolders.some(f => (t.path||"").includes(f)));
-  return JSON.stringify(inbox.slice(0, 20).array().map(t => ({
+    .where(t => !t.text.includes("⛔"))
+    .where(t => !excludeFolders.some(f => (t.path||"").includes(f)))
+    .where(t => {
+      const sm = t.text.match(/⏳\s*(\d{4}-\d{2}-\d{2})/);
+      const dm = t.text.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
+      return (!sm || sm[1] < today) && (!dm || dm[1] < today);
+    });
+  return JSON.stringify({count: inbox.length, tasks: inbox.slice(0,20).array().map(t => ({
     path: t.path, line: t.line, text: t.text
-  })));
+  }))});
 })()'
 ```
 
@@ -152,21 +160,29 @@ $OBS vault=$VAULT eval 'code=
 
 ### Context distribution (counts)
 
+Excludes Checklists, Templates, and Recurring to match Dashboard scope.
+
 ```bash
 $OBS vault=$VAULT eval 'code=
 (async () => {
   const dv = app.plugins.plugins["dataview"]?.api;
-  const tasks = dv.pages().file.tasks.where(t => !t.completed && !t.text.includes("⏬"));
+  const exclude = ["Checklists", "Templates", "Recurring"];
+  const tasks = dv.pages().file.tasks
+    .where(t => !t.completed && !t.text.includes("⏬"))
+    .where(t => !exclude.some(f => (t.path||"").includes(f)));
   const counts = {};
+  let noContext = 0;
   const re = /@(\w+)/g;
   for (const t of tasks) {
-    let m;
+    let m, found = false;
     while ((m = re.exec(t.text)) !== null) {
       counts["@"+m[1]] = (counts["@"+m[1]]||0) + 1;
+      found = true;
     }
     re.lastIndex = 0;
+    if (!found) noContext++;
   }
-  return JSON.stringify(counts);
+  return JSON.stringify({total: tasks.length, contexts: counts, noContext});
 })()'
 ```
 
@@ -196,6 +212,8 @@ $OBS vault=$VAULT eval 'code=
 (async () => {
   const dv = app.plugins.plugins["dataview"]?.api;
   const projects = dv.pages("\"GTD/Projects\"").where(p => {
+    const status = String(p.status || "active").toLowerCase();
+    if (status !== "active") return false;
     const tasks = p.file.tasks.where(t => !t.completed);
     return tasks.length === 0;
   });
