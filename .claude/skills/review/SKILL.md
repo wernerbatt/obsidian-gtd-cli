@@ -12,6 +12,8 @@ Facilitate the weekly review process to keep your GTD system current and maintai
 **Use the `/obsidian` skill for all vault reads and writes.** Load it before running any commands:
 → `.claude/skills/obsidian/SKILL.md`
 
+**IMPORTANT:** Always use the system clock (`date`, `new Date()`) for today's date — never rely on the system prompt date, which may be stale.
+
 Key queries for the review:
 - **Inbox count:** Dataview eval inbox query → `.length`
 - **Context distribution:** Dataview eval context-counts query
@@ -87,7 +89,7 @@ Note: Date format must be `YYYY-MM-DDTHH:MM:SSZ` (UTC with Z suffix). Plain `YYY
 
 #### 4. Completed This Week
 - Tasks completed in the last 7 days
-- Shows your accomplishments
+- Separate **genuine wins** (non-recurring tasks completed) from **recurring maintenance** (tasks with 🔁) — highlight the wins, summarise the recurring as a group
 
 To save the review report, use the `/obsidian` skill's `create` command to write to `GTD/Weekly Review YYYY-MM-DD Summary.md`.
 
