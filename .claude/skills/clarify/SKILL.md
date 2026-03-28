@@ -10,7 +10,7 @@ Help process unprocessed items in the Obsidian vault using GTD (Getting Things D
 ## Vault Operations
 
 **Use the `/obsidian` skill for all vault reads and writes.** Load it before running any commands:
-→ `.claude/skills/obsidian/SKILL.md`
+→ `~/.claude/skills/obsidian/SKILL.md`
 
 Quick reference (see `/obsidian` skill for full patterns):
 - **Find inbox items:** Dataview eval inbox query
@@ -241,6 +241,7 @@ Gmail clarify defaults:
 - For any "read" task created from Gmail, always include a Gmail URL that opens the email directly. Use `gmcli <email> url <threadId>` to generate the link, and place it after the task description before the context tag.
 - Archive **all** triaged emails by default (including ones with tasks created), not just the ones with no action.
 - `gmcli labels` does not support comma-separated thread IDs. Archive emails individually in a loop.
+- **Archive syntax:** Use `gmcli <email> labels <threadId> --remove INBOX` (flag form). The positional form `gmcli <email> labels remove <threadId> INBOX` silently succeeds without archiving. Always verify the first archive with `gmcli <email> search "in:inbox" | grep <id>` before bulk-archiving the rest.
 - **Always use `add_task.py --today`** to add tasks to today's daily note — it uses the system clock, which is authoritative. Do not compute today's date from the system prompt (it may be stale).
 
 ## Example Session
