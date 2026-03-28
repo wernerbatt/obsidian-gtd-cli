@@ -235,9 +235,38 @@ $OBS vault=$VAULT eval 'code=
 })()'
 ```
 
+## Task Editing Wrapper — `bin/obs-task`
+
+The native CLI has no `edit` command. For common task edits (context, dates, priority, description), use the `obs-task` wrapper instead of raw `eval`. It generates the `eval` + `app.vault.process()` call for you.
+
+```bash
+# Add/change context tag
+bin/obs-task edit -f "Daily/2026-03-22.md" -m "Buy groceries" -c @out
+
+# Set scheduled date
+bin/obs-task edit -f "Daily/2026-03-22.md" -m "Buy groceries" -s 2026-03-25
+
+# Set due date
+bin/obs-task edit -f "Daily/2026-03-22.md" -m "Buy groceries" -u 2026-03-25
+
+# Set priority
+bin/obs-task edit -f "GTD/Projects/House.md" -m "Fix leak" -p 🔼
+
+# Replace description (preserves metadata)
+bin/obs-task edit -f "Daily/2026-03-22.md" -m "Old text" -d "New text"
+
+# Combine flags
+bin/obs-task edit -f "Daily/2026-03-22.md" -m "Buy groceries" -c @out -s 2026-03-25 -p 🔼
+
+# Preview without writing
+bin/obs-task edit -f "Daily/2026-03-22.md" -m "Buy groceries" -c @out --dry-run
+```
+
+**Prefer `obs-task` for standard edits.** Fall back to raw `eval` only for complex or non-standard mutations (delete, move, insert under heading, bulk ops).
+
 ## Eval Patterns — File Mutations
 
-For line-level edits the CLI has no native command. Use `eval` with `app.vault.process()` which atomically reads, transforms, and writes the file.
+For line-level edits beyond what `obs-task` covers, use `eval` with `app.vault.process()` which atomically reads, transforms, and writes the file.
 
 ### Edit a task line
 
