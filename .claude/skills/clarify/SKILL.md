@@ -236,13 +236,13 @@ If the user explicitly asks to clarify Gmail (e.g., "clarify my gmail inbox"), g
 Use the gmcli skill/tooling for Gmail actions and follow the same confirmation-first pattern.
 
 Gmail clarify defaults:
-- When creating tasks from Gmail, use `add_task.py --today` to add to today's daily note and archive the email unless the user explicitly says not to.
+- When creating tasks from Gmail, use the /obsidian skill (`$OBS vault=$VAULT daily:path` then `$OBS vault=$VAULT append path=... content="- [ ] ..."`) to add to today's daily note and archive the email unless the user explicitly says not to.
 - When suggesting options for Gmail triage, include a recommended context tag (e.g., @batch/@quick) and note that archiving is the default after action.
 - For any "read" task created from Gmail, always include a Gmail URL that opens the email directly. Use `gmcli <email> url <threadId>` to generate the link, and place it after the task description before the context tag.
 - Archive **all** triaged emails by default (including ones with tasks created), not just the ones with no action.
 - `gmcli labels` does not support comma-separated thread IDs. Archive emails individually in a loop.
 - **Archive syntax:** Use `gmcli <email> labels <threadId> --remove INBOX` (flag form). The positional form `gmcli <email> labels remove <threadId> INBOX` silently succeeds without archiving. Always verify the first archive with `gmcli <email> search "in:inbox" | grep <id>` before bulk-archiving the rest.
-- **Always use `add_task.py --today`** to add tasks to today's daily note — it uses the system clock, which is authoritative. Do not compute today's date from the system prompt (it may be stale).
+- **Always use the Obsidian CLI** (`daily:path` + `append`) to add tasks to today's daily note — it uses the system clock, which is authoritative. Do not compute today's date from the system prompt (it may be stale).
 
 ## Example Session
 

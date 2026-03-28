@@ -19,8 +19,8 @@ This repository provides a Python CLI toolkit plus reusable skills for AI agents
 ## Tooling
 
 - All vault operations go through the Obsidian CLI — see the `/obsidian` skill.
-- Python scripts in `tools/` are **deprecated** (see `tools/DEPRECATED.md`).
-- Configuration lives in `config.yaml` (notably `vault_path` and GTD paths).
+- `tools/obsidian_cli.py` is a thin Python wrapper around the CLI binary (used when Python is more convenient than shell).
+- Configuration lives in `config.yaml` (notably `obsidian_bin`, `vault_name`, and GTD paths).
 - Never use direct file I/O for vault files — always go through the Obsidian CLI.
 
 ## Safety and Confirmation

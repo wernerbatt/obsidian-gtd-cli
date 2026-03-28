@@ -11,13 +11,13 @@ Use this checklist when creating, maintaining, or closing GTD projects in the Ob
 Before creating a project, confirm the desired outcome statement and any hard due dates or constraints.
 
 ## Project Setup Checklist
-1. Run `python tools/create_project.py "Project Name" [--context "@deep"]` to scaffold `../Obsidian/GTD/Projects/Project Name.md` and update `Projects List.md`.
+1. Use the Obsidian CLI to scaffold `../Obsidian/GTD/Projects/Project Name.md` (`$OBS vault=$VAULT create path="GTD/Projects/Project Name.md" content="..."`) and append to `Projects List.md`.
 2. Immediately edit the new note:
    - Describe the **Purpose / Outcome** in a single success sentence.
    - Fill in constraints, deliverables, and due dates near the top if applicable.
 3. Brain-dump all known next actions in the **Next Actions** section and tag each with a context (`@quick`, `@home`, etc.). Leave only the true “next” ones unchecked.
 4. Default to ordered steps unless explicitly told they can be parallel. Add Task Dependencies: assign each task a `🆔` and add `⛔ <id>` to the dependent task so the sequence is enforced. For multiple prerequisites, list IDs with commas and no spaces.
-5. Move or copy any existing tasks referencing this work into the project note (or into context files while linking back with `[[Project Name]]`). Use `python tools/move_task.py ...` to preserve metadata.
+5. Move or copy any existing tasks referencing this work into the project note (or into context files while linking back with `[[Project Name]]`). Use the /obsidian skill eval patterns (delete from source + append to destination) to preserve metadata.
 6. Capture supporting material in **Notes** or **Resources / Links** (meeting notes, links, files).
 7. If the project depends on someone else, record @waiting items inside the Notes section and optionally in Dashboard contexts for visibility.
 

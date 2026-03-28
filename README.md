@@ -133,7 +133,7 @@ Agent: [executes via Obsidian CLI eval patterns]
 
 AGENTS.md                  # Entry point for agents — skill discovery
 config.yaml.example        # Template for personal config
-tools/                     # Deprecated Python tools (kept for reference)
+tools/obsidian_cli.py       # Thin Python wrapper around the CLI (optional)
 ```
 
 ### Why skills instead of code?
@@ -147,10 +147,6 @@ Skills are plain markdown files that teach an agent a workflow. Compared to trad
 - **Composable** — skills reference each other (`/clarify` uses `/obsidian`)
 
 The Obsidian CLI's `eval` command is the key enabler — it gives agents direct access to vault APIs, Dataview queries, and atomic file edits through a single binary.
-
-## Deprecated: Python tools
-
-The `tools/` directory contains Python scripts that predated the Obsidian CLI approach. They're kept for reference but are no longer used. See `tools/DEPRECATED.md` for the migration map.
 
 ## License
 

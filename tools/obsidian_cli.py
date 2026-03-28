@@ -2,10 +2,9 @@
 """
 Thin wrapper around the official Obsidian CLI (obsidian 1.12+).
 
-Every tool should call obsidian() instead of doing direct file I/O for reads.
-Writes that touch a single line still use direct file I/O (the CLI has no
-line-level edit/delete), but all reads, appends, task queries, and creates
-go through the CLI so Obsidian stays in sync.
+ALL vault reads and writes go through the CLI so the running Obsidian
+app stays in sync.  Line-level edits use ``vault_eval`` with
+``app.vault.process()`` — no direct file I/O anywhere.
 """
 
 import json
@@ -98,7 +97,7 @@ def run_json(*args: str, **kwargs) -> list | dict:
 
 
 # ---------------------------------------------------------------------------
-# High-level helpers
+# High-level helpers — native CLI commands
 # ---------------------------------------------------------------------------
 
 def tasks_todo(*, verbose: bool = True, as_json: bool = True) -> list[dict]:
@@ -232,6 +231,146 @@ def list_files(*, folder: str | None = None, total: bool = False) -> str:
     return run(*args)
 
 
-def vault_eval(code: str) -> str:
+# ---------------------------------------------------------------------------
+# Eval — execute JS inside Obsidian
+# ---------------------------------------------------------------------------
+
+def vault_eval(code: str, *, timeout: int = 30) -> str:
     """Execute JavaScript in the Obsidian app console."""
-    return run("eval", f"code={code}")
+    return run("eval", f"code={code}", timeout=timeout)
+
+
+def _js_escape(s: str) -> str:
+    """Escape a Python string for embedding in a JS string literal (backtick)."""
+    return s.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+
+
+# ---------------------------------------------------------------------------
+# Eval helpers — line-level file mutations via app.vault.process()
+# ---------------------------------------------------------------------------
+
+def edit_line(path: str, line_num: int, new_text: str) -> str:
+    """Replace a single line (1-indexed) in *path* with *new_text*."""
+    js = (
+        "(async () => {"
+        f"  const f = app.vault.getAbstractFileByPath(`{_js_escape(path)}`);"
+        "  if (!f) throw new Error('file not found');"
+        "  await app.vault.process(f, (content) => {"
+        "    const lines = content.split('\\n');"
+        f"    lines[{line_num - 1}] = `{_js_escape(new_text)}`;"
+        "    return lines.join('\\n');"
+        "  });"
+        f"  return 'edited line {line_num}';"
+        "})()"
+    )
+    return vault_eval(js)
+
+
+def delete_lines(path: str, start: int, count: int = 1) -> str:
+    """Delete *count* lines starting at *start* (1-indexed)."""
+    js = (
+        "(async () => {"
+        f"  const f = app.vault.getAbstractFileByPath(`{_js_escape(path)}`);"
+        "  if (!f) throw new Error('file not found');"
+        "  await app.vault.process(f, (content) => {"
+        "    const lines = content.split('\\n');"
+        f"    lines.splice({start - 1}, {count});"
+        "    return lines.join('\\n');"
+        "  });"
+        f"  return 'deleted {count} line(s) from line {start}';"
+        "})()"
+    )
+    return vault_eval(js)
+
+
+def replace_by_match(path: str, old_text: str, new_text: str) -> str:
+    """Replace *old_text* with *new_text* in *path* (first occurrence)."""
+    js = (
+        "(async () => {"
+        f"  const f = app.vault.getAbstractFileByPath(`{_js_escape(path)}`);"
+        "  if (!f) throw new Error('file not found');"
+        "  await app.vault.process(f, (content) => {"
+        f"    const from_ = `{_js_escape(old_text)}`;"
+        f"    const to_ = `{_js_escape(new_text)}`;"
+        "    if (!content.includes(from_)) throw new Error('text not found');"
+        "    return content.replace(from_, to_);"
+        "  });"
+        "  return 'replaced';"
+        "})()"
+    )
+    return vault_eval(js)
+
+
+def insert_after_heading(path: str, heading: str, text: str) -> str:
+    """Insert *text* at the end of the section under *heading*."""
+    js = (
+        "(async () => {"
+        f"  const f = app.vault.getAbstractFileByPath(`{_js_escape(path)}`);"
+        "  if (!f) throw new Error('file not found');"
+        "  await app.vault.process(f, (content) => {"
+        "    const lines = content.split('\\n');"
+        f"    const heading = `{_js_escape(heading)}`;"
+        "    const re = new RegExp('^#{1,6}\\\\s+' + heading.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '\\\\s*$');"
+        "    let idx = -1;"
+        "    for (let i = 0; i < lines.length; i++) {"
+        "      if (re.test(lines[i])) { idx = i; break; }"
+        "    }"
+        "    if (idx === -1) throw new Error('heading not found: ' + heading);"
+        "    let insert = idx + 1;"
+        "    for (let i = idx + 1; i < lines.length; i++) {"
+        "      if (/^#{1,6}\\s/.test(lines[i])) break;"
+        "      insert = i + 1;"
+        "    }"
+        f"    lines.splice(insert, 0, `{_js_escape(text)}`);"
+        "    return lines.join('\\n');"
+        "  });"
+        "  return 'inserted under ' + heading;"
+        "})()"
+    )
+    return vault_eval(js)
+
+
+def move_lines(src_path: str, start: int, count: int,
+               dst_path: str) -> str:
+    """Move *count* lines from *src_path* (at *start*, 1-indexed) to
+    the end of *dst_path*.  Two sequential writes — not atomic across
+    files but safe as long as src != dst.
+    """
+    js = (
+        "(async () => {"
+        f"  const srcF = app.vault.getAbstractFileByPath(`{_js_escape(src_path)}`);"
+        f"  const dstF = app.vault.getAbstractFileByPath(`{_js_escape(dst_path)}`);"
+        "  if (!srcF) throw new Error('source not found');"
+        "  if (!dstF) throw new Error('dest not found');"
+        "  let moved = '';"
+        "  await app.vault.process(srcF, (content) => {"
+        "    const lines = content.split('\\n');"
+        f"    moved = lines.splice({start - 1}, {count}).join('\\n');"
+        "    return lines.join('\\n');"
+        "  });"
+        "  await app.vault.process(dstF, (content) => {"
+        "    return content.trimEnd() + '\\n' + moved + '\\n';"
+        "  });"
+        "  return 'moved ' + moved.split('\\n')[0].trim();"
+        "})()"
+    )
+    return vault_eval(js)
+
+
+def get_line(path: str, line_num: int) -> str:
+    """Read a single line (1-indexed) from *path* via eval."""
+    js = (
+        "(async () => {"
+        f"  const f = app.vault.getAbstractFileByPath(`{_js_escape(path)}`);"
+        "  if (!f) throw new Error('file not found');"
+        "  const content = await app.vault.read(f);"
+        f"  return content.split('\\n')[{line_num - 1}] || '';"
+        "})()"
+    )
+    return vault_eval(js)
+
+
+def get_lines(path: str) -> list[str]:
+    """Read all lines of *path* via CLI and return as a list."""
+    content = read_file(path=path)
+    return content.split("\n")
