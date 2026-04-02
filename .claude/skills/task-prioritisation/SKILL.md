@@ -32,6 +32,8 @@ When the user asks to prioritise or triage tasks:
 3. Present a summary for review before writing.
 4. On approval, update task lines in place.
 
+If the user starts making rapid-fire decisions on individual tasks, switch into **one-at-a-time triage mode**. In that mode, present one task at a time, suggest the most likely disposition (`do now`, `schedule`, `automate`, `collaborate`, `drop`, `demote`, `promote`, `move to @deep`, etc.), then wait for the user's short instruction before writing.
+
 ---
 
 ## Task format
@@ -127,7 +129,9 @@ Follow this sequence:
 6. **Surface important non-urgent work next** — look for strategic, important tasks. Flag these prominently. The user tends toward avoidance of this category (known pattern from PQ coaching: Avoider saboteur), so explicitly call out any 🔼 tasks that have been sitting for more than a week.
 7. **Assess cost of delay mentally** — for each task, consider what happens if it slips another week. Use this to inform priority, but do not write cost-of-delay to the task line.
 8. **Flag quick wins** — any `@quick` task with 🔺 or ⏫ priority is a good candidate for "just do it now."
-9. **Suggest a working order** — after enriching, suggest an order for the user's next session. Prioritise by: 🔺 first, then ⏫ `@quick` items (build momentum), then ⏫ `@deep` items (the real work), then 🔼.
+9. **Treat demotion/promotion as one-step moves by default** — if the user says "demote" or "promote" without specifying the destination, move exactly one level down or up in priority. Do not interpret "demote" as automatic Someday/Maybe (`⏬`) unless the user explicitly says `someday`, `lowest`, or equivalent.
+10. **Suggest a working order** — after enriching, suggest an order for the user's next session. Prioritise by: 🔺 first, then ⏫ `@quick` items (build momentum), then ⏫ `@deep` items (the real work), then 🔼.
+11. **Treat review-summary tasks as non-canonical** — if an action is living inside a weekly review summary or similar retrospective note, suggest moving the real action into a project, recurring list, or current daily note instead of letting long-lived work accumulate in summaries.
 
 ### Companion skills
 
@@ -141,6 +145,8 @@ Ask rather than guess when:
 - You don't know who (if anyone) is waiting on the output.
 - The task involves a deadline or commitment you're not aware of.
 - Multiple tasks seem equally important and ordering them requires judgment about the user's current goals or energy.
+
+But if the user is answering in terse shorthand (for example: `deep`, `cancel`, `schedule saturday`, `promote one level`, `done`), interpret that literally and act without forcing extra clarification unless the instruction is genuinely ambiguous.
 
 **Bare-link tasks** (URLs with no description or context) need `/clarify` processing, not enrichment. Don't try to add priority or effort to a task that hasn't been clarified yet — flag them for a clarify session instead.
 
@@ -167,6 +173,7 @@ When updating task lines:
 - **Don't change** completion status.
 - **Present a diff-style summary** before writing, showing what will change.
 - **Mark done immediately** — when the user says "done" for a task during a triage session, update the file right then. Don't defer file writes to end of session.
+- **If a task still appears after being marked done, don't automatically triage it again.** Call out likely recurring-task regeneration, cached query output, or plugin oddities before making further changes.
 
 Example:
 
