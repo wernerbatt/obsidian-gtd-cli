@@ -15,11 +15,13 @@ Help process unprocessed items in the Obsidian vault using GTD (Getting Things D
 Quick reference (see `/obsidian` skill for full patterns):
 - **Find inbox items:** Dataview eval inbox query
 - **Add task to daily note:** `daily:path` + `append`
+- **Mark done:** prefer `python3 tools/obsidian_tasks.py done ...` (wraps native `task ... done`)
+- **Cancel/drop with history:** prefer `python3 tools/obsidian_tasks.py cancel ...` → `- [x] ... ❌ YYYY-MM-DD`
+- **Rewrite task text:** prefer `python3 tools/obsidian_tasks.py rewrite ...`
+- **Change priority / someday:** prefer `python3 tools/obsidian_tasks.py set-priority ...`
 - **Add task under heading:** eval + `vault.process()` insert-under-heading
-- **Edit task:** eval + `vault.process()` edit-by-match
 - **Move task:** eval + `vault.process()` (delete from source + append to dest)
-- **Mark done:** `task path=... line=N done`
-- **Delete task:** eval + `vault.process()` splice
+- **Delete task permanently:** eval + `vault.process()` splice
 
 ### Open Today's Daily Note in Obsidian
 
@@ -30,6 +32,7 @@ cmd.exe /c start "" "obsidian://daily"
 ### Stable Targeting (Avoid Line-Shift Errors)
 
 When batch editing or moving tasks, prefer description matching over line numbers.
+When a recurring task mutation is not covered by the wrappers, suggest extending `tools/obsidian_tasks.py` before reaching for a one-off raw script.
 
 ### Avoid Parallel Edits to the Same File
 
@@ -52,7 +55,7 @@ Agents should:
 
 ### Batch Suggestion Mode (Default)
 
-Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) for inbox processing by default. If an item clearly needs multiple steps, include a sub-option to promote it to a project (e.g., `1.3 Create project: "<Name>" and seed next actions`). When suggesting actions, always look for opportunities to complete the task using an LLM agent (e.g., Claude Code CLI, Codex CLI, Gemini CLI). When a task could be accelerated by an LLM agent (drafting, summarizing, research, email), include a sub-option to delegate to an agent (e.g., `1.4 Use LLM agent to draft/research/summarize`) and also suggest adding `@ai` context tag to those tasks. After selections, proceed unless a step is ambiguous, destructive, or conflicting-then ask to confirm those specific items.
+Present options as numbered items with sub-options (e.g., 1, 1.1, 1.2, 2, 2.1) for inbox processing by default. Users may respond with multiple selections in a single message (e.g., `1.1 2.2 3.1 4.2`) — process all of them together: archive in one batch call, add tasks in sequence, then confirm. If an item clearly needs multiple steps, include a sub-option to promote it to a project (e.g., `1.3 Create project: "<Name>" and seed next actions`). When suggesting actions, always look for opportunities to complete the task using an LLM agent (e.g., Claude Code CLI, Codex CLI, Gemini CLI). When a task could be accelerated by an LLM agent (drafting, summarizing, research, email), include a sub-option to delegate to an agent (e.g., `1.4 Use LLM agent to draft/research/summarize`) and also suggest adding `@ai` context tag to those tasks. After selections, proceed unless a step is ambiguous, destructive, or conflicting-then ask to confirm those specific items.
 
 ## Workflow
 
@@ -137,7 +140,10 @@ The GTD clarify workflow asks these questions for each task:
    - **Delegate**: Add @waiting tag + person
    - **Do ASAP**: Add context tag
 
-Use the `/obsidian` skill's edit-by-match, move, mark-done, and delete patterns to execute these actions.
+Use the `/obsidian` skill's preferred order to execute these actions:
+1. Native CLI commands
+2. `tools/obsidian_tasks.py` / `tools/obsidian_cli.py`
+3. Raw eval patterns only if no wrapper exists yet
 
 ## Context Tags
 
@@ -240,8 +246,8 @@ Gmail clarify defaults:
 - When suggesting options for Gmail triage, include a recommended context tag (e.g., @batch/@quick) and note that archiving is the default after action.
 - For any "read" task created from Gmail, always include a Gmail URL that opens the email directly. Use `gmcli <email> url <threadId>` to generate the link, and place it after the task description before the context tag.
 - Archive **all** triaged emails by default (including ones with tasks created), not just the ones with no action.
-- `gmcli labels` does not support comma-separated thread IDs. Archive emails individually in a loop.
-- **Archive syntax:** Use `gmcli <email> labels <threadId> --remove INBOX` (flag form). The positional form `gmcli <email> labels remove <threadId> INBOX` silently succeeds without archiving. Always verify the first archive with `gmcli <email> search "in:inbox" | grep <id>` before bulk-archiving the rest.
+- `gmcli labels` supports multiple thread IDs in a single call — pass them space-separated: `gmcli <email> labels id1 id2 id3 --remove INBOX`. Do NOT use a for loop.
+- **Archive syntax:** Use `gmcli <email> labels <threadId...> --remove INBOX` (flag form). The positional form `gmcli <email> labels remove <threadId> INBOX` silently succeeds without archiving. Always verify the first archive with `gmcli <email> search "in:inbox" | grep <id>` before bulk-archiving the rest.
 - **Always use the Obsidian CLI** (`daily:path` + `append`) to add tasks to today's daily note — it uses the system clock, which is authoritative. Do not compute today's date from the system prompt (it may be stale).
 
 ## Example Session
